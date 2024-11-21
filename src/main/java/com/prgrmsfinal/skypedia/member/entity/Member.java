@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Getter
+@Setter
 @ToString
 @Builder
 @NoArgsConstructor
@@ -20,10 +21,12 @@ public class Member {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String providerId;
+    private String oauthId;
 
     @Column(nullable = false)
     private String name;
+
+    private String email;
 
     @Column(unique = true)
     private String username;

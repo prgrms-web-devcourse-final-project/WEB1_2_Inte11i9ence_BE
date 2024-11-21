@@ -9,5 +9,5 @@ public class MemberDTO {
 
     private String role;
     private String name;
-    private String providerId;
+    private String oauthId;
 }
