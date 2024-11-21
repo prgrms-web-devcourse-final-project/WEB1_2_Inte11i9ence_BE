@@ -245,6 +245,9 @@ gradle-app.setting
 # Java heap dump
 *.hprof
 
+# For Only Development!!!
+.idea
+application-dev.properties
+
 # End of https://www.toptal.com/developers/gitignore/api/windows,macos,java,gradle,intellij,visualstudiocode
 
-application-dev.properties
