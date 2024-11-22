@@ -44,7 +44,6 @@ public class Member {
 
     private boolean withdrawn = Boolean.FALSE;      //탈퇴여부
 
-    @LastModifiedDate
     private LocalDateTime withdrawnAt;//탈퇴 날짜
 
 
