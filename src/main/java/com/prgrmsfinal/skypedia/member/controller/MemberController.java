@@ -12,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.file.AccessDeniedException;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/member")
@@ -41,5 +43,30 @@ public class MemberController {
     public ResponseEntity<MemberResponseDTO> getMember(@PathVariable Long id) {
         MemberResponseDTO memberResponseDTO = memberService.read(id);  // MemberResponseDTO를 받음
         return ResponseEntity.ok(memberResponseDTO);  // ResponseEntity로 감싸서 반환
+    }
+
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteMember(@PathVariable Long id,
+                                               Authentication authentication) throws AccessDeniedException {
+        authenticateMember(id, authentication);
+
+        memberService.deleteMember(id);
+
+        return ResponseEntity.ok("Member deleted");
+    }
+
+    // 회원 인증 로직을 확인하는 공통 메서드
+    private void authenticateMember(Long id, Authentication authentication) throws AccessDeniedException {
+        CustomOAuth2User customOAuth2User = (CustomOAuth2User) authentication.getPrincipal();
+        String authenticatedOauthId = customOAuth2User.getOauthId();
+
+        // 회원 정보 조회
+        Member member = memberRepository.findById(id).orElseThrow(() -> new IllegalStateException("Member not found"));
+
+        // oauthId 일치 여부 검사
+        if (!authenticatedOauthId.equals(member.getOauthId())) {
+            throw new AccessDeniedException("Oauth id mismatch"); // 권한 거부 예외
+        }
     }
 }
