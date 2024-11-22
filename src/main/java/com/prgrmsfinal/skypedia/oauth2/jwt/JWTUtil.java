@@ -11,7 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 @Component
-public class JWTUtil {
+public class JWTUtil {  //토큰을 제작하는 클래스
 
     private SecretKey secretKey;
 

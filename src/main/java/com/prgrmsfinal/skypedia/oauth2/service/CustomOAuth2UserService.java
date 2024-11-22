@@ -18,7 +18,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 
 @Service
 @RequiredArgsConstructor
-public class CustomOAuth2UserService extends DefaultOAuth2UserService {
+public class CustomOAuth2UserService extends DefaultOAuth2UserService { //회원가입, 로그인 기능 클래스 (검증포함)
 
     private final MemberRepository memberRepository;
     

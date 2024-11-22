@@ -1,17 +1,17 @@
 package com.prgrmsfinal.skypedia.member.dto;
 
 import com.prgrmsfinal.skypedia.member.entity.Member;
-import jakarta.persistence.Column;
+
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
+
+
 
 import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
-public class MemberResponseDTO {
+public class MemberResponseDTO {    //회원 조회용 DTO
     private Long id;
     private String oauthId;
     private String name;

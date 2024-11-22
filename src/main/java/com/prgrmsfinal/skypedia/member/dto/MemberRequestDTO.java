@@ -5,7 +5,7 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class MemberRequestDTO {
+public class MemberRequestDTO { //회원 수정용 DTO
 
     private String username;
 

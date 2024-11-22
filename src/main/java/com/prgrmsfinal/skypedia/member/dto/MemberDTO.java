@@ -5,7 +5,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class MemberDTO {
+public class MemberDTO {    //페이로드용 DTO
 
     private String role;
     private String name;

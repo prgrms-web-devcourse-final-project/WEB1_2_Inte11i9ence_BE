@@ -15,7 +15,7 @@ import java.util.Collection;
 import java.util.Iterator;
 
 @Component
-public class CustomSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
+public class CustomSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {   //로그인 성공시 토큰 쿠키에 저장하고 리다이렉팅하는 클래스
 
     private final JWTUtil jwtUtil;
 
