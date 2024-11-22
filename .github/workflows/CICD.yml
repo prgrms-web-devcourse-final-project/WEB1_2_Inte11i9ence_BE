@@ -18,10 +18,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # 2. application-prod.properties 암호화
+      - name: Add secrets into properties
+        run: |
+          echo "${{ secrets.APPLICATION_PROD }}" | base64 --decode > ./src/main/resources/application-prod.properties
+
       # 2. Docker 이미지 빌드
       - name: Build Docker Image
         run: |
           docker build -t spring-ubuntu-app:latest .
+
+      # 4. application-prod.properties 빌드 후 제거하기
+      - name: Clean up application-prod.properties
+        run: rm ./src/main/resources/application-prod.properties
 
   push-image:
     if: github.ref == 'refs/heads/release'  # release 브랜치에서만 실행
@@ -51,8 +60,10 @@ jobs:
     if: github.ref == 'refs/heads/release'  # release 브랜치에서만 실행
     runs-on: self-hosted  # Self-hosted Runner 사용
     needs: [build, push-image]  # build와 push-image Job이 완료된 후 실행
+
     env:
       PROJECT_NAME: "spring-ubuntu-app"
+
     steps:
       # 1. Docker Hub 로그인하기 - 이것도 깃헙에서 시크릿키로 설정하는거 잊지마셈 좀
       - name: Log in to Docker Hub
