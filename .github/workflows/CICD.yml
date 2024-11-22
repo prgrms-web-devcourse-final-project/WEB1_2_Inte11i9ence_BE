@@ -1,0 +1,93 @@
+name: Build, Push, and Deploy Docker Image
+
+on:
+  push:
+    branches:
+      - main       # main 브랜치 푸시 시 실행
+      - release    # release 브랜치 푸시 시 실행
+  pull_request:
+    branches:
+      - main       # main 브랜치로 병합될 때 실행
+      - release    # release 브랜치로 병합될 때 실행
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      # 1. 저장소 체크아웃
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2. application-prod.properties 암호화
+      - name: Add secrets into properties
+        run: |
+          echo "${{ secrets.APPLICATION_PROD }}" | base64 --decode > ./src/main/resources/application-prod.properties
+
+      # 2. Docker 이미지 빌드
+      - name: Build Docker Image
+        run: |
+          docker build -t spring-ubuntu-app:latest .
+
+      # 4. application-prod.properties 빌드 후 제거하기
+      - name: Clean up application-prod.properties
+        run: rm ./src/main/resources/application-prod.properties
+
+  push-image:
+    if: github.ref == 'refs/heads/release'  # release 브랜치에서만 실행
+    runs-on: ubuntu-24.04
+    needs: build  # 'build' Job이 완료된 후 실행
+    steps:
+      # 1. 저장소 체크아웃
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2. Docker 로그인
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # 3. Docker 이미지 푸시
+      - name: Push Docker Image
+        run: |
+          docker tag spring-ubuntu-app:latest ${{ secrets.DOCKER_USERNAME }}/spring-ubuntu-app:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/spring-ubuntu-app:latest
+  
+
+  # 셀프 호스트가 깃헙에서 설정하고 조지는거.
+  deploy:
+    if: github.ref == 'refs/heads/release'  # release 브랜치에서만 실행
+    runs-on: self-hosted  # Self-hosted Runner 사용
+    needs: [build, push-image]  # build와 push-image Job이 완료된 후 실행
+
+    env:
+      PROJECT_NAME: "spring-ubuntu-app"
+
+    steps:
+      # 1. Docker Hub 로그인하기 - 이것도 깃헙에서 시크릿키로 설정하는거 잊지마셈 좀
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # 2. Docker 이미지 Pull
+      - name: Pull Docker Image
+        run: sudo docker pull ${{ secrets.DOCKER_USERNAME }}/${{ env.PROJECT_NAME }}
+
+      # 3. 기존 컨테이너 중지
+      - name: Stop Old Container
+        run: sudo docker stop ${{ env.PROJECT_NAME }} || true
+
+      # 4. 기존 컨테이너 삭제
+      - name: Remove Old Container
+        run: sudo docker rm ${{ env.PROJECT_NAME }} || true
+
+      # 5. 새 컨테이너 실행
+      - name: Run New Container
+        run: sudo docker run --name ${{ env.PROJECT_NAME }} -d -p 8080:8080 ${{ secrets.DOCKER_USERNAME }}/${{ env.PROJECT_NAME }}
+
+      # 6. 오래된 이미지 삭제
+      - name: Remove Old Images
+        run: sudo docker image prune -a -f || true
