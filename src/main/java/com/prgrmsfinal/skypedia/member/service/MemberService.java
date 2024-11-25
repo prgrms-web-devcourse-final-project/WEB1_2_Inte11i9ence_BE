@@ -42,6 +42,7 @@ public class MemberService {
         if (memberRequestDTO.getProfileImage() != null) {
             member.setProfileImage(memberRequestDTO.getProfileImage());
         }
+        member.setUpdatedAt(LocalDateTime.now());
         memberRepository.save(member);
     }
 

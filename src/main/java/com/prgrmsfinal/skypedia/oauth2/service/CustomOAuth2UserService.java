@@ -15,6 +15,8 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.apache.commons.lang3.RandomStringUtils;
 
+import java.time.LocalDateTime;
+
 
 @Service
 @RequiredArgsConstructor
@@ -53,6 +55,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService { //회원
             member.setOauthId(oauthId);
             member.setEmail(oAuth2Response.getEmail());
             member.setName(oAuth2Response.getName());
+            member.setCreatedAt(LocalDateTime.now());
+            member.setUpdatedAt(LocalDateTime.now());
 
             String randomUsername = generateRandomUsername();
             member.setUsername(randomUsername);
