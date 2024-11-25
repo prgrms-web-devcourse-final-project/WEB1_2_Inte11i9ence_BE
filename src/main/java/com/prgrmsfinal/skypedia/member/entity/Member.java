@@ -2,7 +2,7 @@ package com.prgrmsfinal.skypedia.member.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.Where;
+import org.hibernate.annotations.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -17,7 +17,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @EntityListeners(value = {AuditingEntityListener.class})
-@Where(clause = "withdrawn = false")
+@FilterDef(name = "withdrawnFilter", parameters = @ParamDef(name = "withdrawn", type = Boolean.class))
+@Filter(name = "withdrawnFilter", condition = "withdrawn = :withdrawn")
 public class Member {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -42,8 +43,10 @@ public class Member {
     @LastModifiedDate
     private LocalDateTime updatedAt;//업데이트 날짜
 
-    private boolean withdrawn = Boolean.FALSE;      //탈퇴여부
+    @Column(name = "withdrawn")
+    private boolean withdrawn = Boolean.FALSE; // 탈퇴 여부
 
+    @Column(name = "withdrawnAt")
     private LocalDateTime withdrawnAt;//탈퇴 날짜
 
 
