@@ -6,6 +6,7 @@ import com.prgrmsfinal.skypedia.oauth2.jwt.JWTUtil;
 import com.prgrmsfinal.skypedia.oauth2.service.CustomOAuth2UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -27,6 +28,11 @@ public class SecurityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
     private final JWTUtil jwtUtil;
 
+    @Value("${frontend.url}")
+    private String frontendUrl;
+    @Value("${backend.url}")
+    private String backendUrl;
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
@@ -38,7 +44,7 @@ public class SecurityConfig {
 
                         CorsConfiguration configuration = new CorsConfiguration();
 
-                        configuration.setAllowedOrigins(Collections.singletonList("http://localhost:3000"));
+                        configuration.setAllowedOrigins(Collections.singletonList(frontendUrl));
                         configuration.setAllowedMethods(Collections.singletonList("*"));
                         configuration.setAllowCredentials(true);
                         configuration.setAllowedHeaders(Collections.singletonList("*"));
@@ -68,7 +74,6 @@ public class SecurityConfig {
         //oauth2
         http
                 .oauth2Login((oauth2) -> oauth2
-                        .loginPage("/login")
                         .userInfoEndpoint((userInfoEndpointConfig -> userInfoEndpointConfig
                                 .userService(customOAuth2UserService)))
                         .successHandler(customSuccessHandler));
@@ -86,7 +91,7 @@ public class SecurityConfig {
 
         http.logout(logout -> logout
                 .logoutUrl("/logout")
-                .logoutSuccessUrl("http://localhost:3000/")
+                .logoutSuccessUrl(frontendUrl)
                 .invalidateHttpSession(false)  // 세션 무효화 비활성화 (stateless 방식에선 필요 없음)
                 .clearAuthentication(true)  // SecurityContext 초기화
                 .deleteCookies("Authorization"));  // JWT가 저장된 쿠키 삭제
