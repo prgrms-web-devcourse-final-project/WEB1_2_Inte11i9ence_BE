@@ -38,10 +38,9 @@ public class JWTFilter extends OncePerRequestFilter {   //토큰을 검증하는
             }
         }
 
-        //Authorization 헤더 검증
+        //Authorization 헤더 검증 , 토큰이 비었는지 확인
         if (authorization == null) {
 
-            System.out.println("token null");
             filterChain.doFilter(request, response);
 
             //조건이 해당되면 메소드 종료 (필수)
@@ -54,7 +53,6 @@ public class JWTFilter extends OncePerRequestFilter {   //토큰을 검증하는
         //토큰 소멸 시간 검증
         if (jwtUtil.isExpired(token)) {
 
-            System.out.println("token expired");
             filterChain.doFilter(request, response);
 
             //조건이 해당되면 메소드 종료 (필수)

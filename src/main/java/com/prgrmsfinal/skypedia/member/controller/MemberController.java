@@ -7,12 +7,10 @@ import com.prgrmsfinal.skypedia.member.repository.MemberRepository;
 import com.prgrmsfinal.skypedia.member.service.MemberService;
 import com.prgrmsfinal.skypedia.oauth2.dto.CustomOAuth2User;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.nio.file.AccessDeniedException;
 
 @RestController
 @RequiredArgsConstructor
@@ -21,67 +19,34 @@ public class MemberController {
     private final MemberService memberService;
     private final MemberRepository memberRepository;
 
-    @PutMapping("/{id}")
-    public ResponseEntity<String> updateMember(@PathVariable Long id,
-                                               @RequestBody MemberRequestDTO memberRequestDTO,
-                                               Authentication authentication) {
+    public Member getAuthenticatedMember(Authentication authentication) {
         CustomOAuth2User customOAuth2User = (CustomOAuth2User) authentication.getPrincipal();
         String authenticatedOauthId = customOAuth2User.getOauthId();
-
-        Member member = memberRepository.findById(id).orElseThrow(()-> new IllegalStateException("Member not found"));
-
-        if (!authenticatedOauthId.equals(member.getOauthId())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Oauth id mismatch");
-        }
-
-        memberService.modify(id, memberRequestDTO);
-
-        return ResponseEntity.ok("Member updated");
+        return memberRepository.findByOauthId(authenticatedOauthId);
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<MemberResponseDTO> getMember(@PathVariable Long id) {
-        MemberResponseDTO memberResponseDTO = memberService.read(id);  // MemberResponseDTO를 받음
-        return ResponseEntity.ok(memberResponseDTO);  // ResponseEntity로 감싸서 반환
-    }
-
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteMember(@PathVariable Long id,
-                                               Authentication authentication) throws AccessDeniedException {
-        authenticateMember(id, authentication);
-
-        memberService.deleteMember(id);
-
-        return ResponseEntity.ok("Member deleted");
-    }
-
-    // 회원 인증 로직을 확인하는 공통 메서드
-    private void authenticateMember(Long id, Authentication authentication) throws AccessDeniedException {
-        CustomOAuth2User customOAuth2User = (CustomOAuth2User) authentication.getPrincipal();
-        String authenticatedOauthId = customOAuth2User.getOauthId();
-
-        // 회원 정보 조회
-        Member member = memberRepository.findById(id).orElseThrow(() -> new IllegalStateException("Member not found"));
-
-        // oauthId 일치 여부 검사
-        if (!authenticatedOauthId.equals(member.getOauthId())) {
-            throw new AccessDeniedException("Oauth id mismatch"); // 권한 거부 예외
-        }
-    }
-
+    /** 내 계정 조회 */
     @GetMapping("/me")
-    public ResponseEntity<?> getMyInfo(Authentication authentication) {
-        // 현재 인증된 사용자의 정보를 가져옴
-        CustomOAuth2User customOAuth2User = (CustomOAuth2User) authentication.getPrincipal();
+    public ResponseEntity<?> getCurrentMember(Authentication authentication) {
+        Member member = getAuthenticatedMember(authentication);
+        MemberResponseDTO memberResponseDTO = memberService.read(member.getId());
+        return ResponseEntity.ok(new ApiResponse<>("성공적으로 작동했습니다.",memberResponseDTO));
+    }
 
-        // 사용자 고유 식별 ID(OAuth ID) 추출
-        String authenticatedOauthId = customOAuth2User.getOauthId();
+    /** 내 계정 수정 */
+    @PutMapping("/me")
+    public ResponseEntity<?> putCurrentMember(Authentication authentication, @RequestBody MemberRequestDTO memberRequestDTO) {
+        Member member = getAuthenticatedMember(authentication);
+        memberService.modify(member.getId(), memberRequestDTO);
+        MemberResponseDTO memberResponseDTO = new MemberResponseDTO(member);
+        return ResponseEntity.ok(new ApiResponse<>("성공적으로 작동했습니다.",memberResponseDTO));
+    }
 
-        // 데이터베이스에서 해당 OAuth ID로 사용자 정보 조회
-        Member member = memberRepository.findByOauthId(authenticatedOauthId);
-
-        // 조회된 사용자 정보를 응답으로 반환
-        return ResponseEntity.ok(member);
+    /** 내 계정 탈퇴 */
+    @DeleteMapping("/me")
+    public ResponseEntity<?> deleteCurrentMember(Authentication authentication) {
+        Member member = getAuthenticatedMember(authentication);
+        memberService.deleteMember(member.getId());
+        return ResponseEntity.ok(new ApiResponse<>("성공적으로 작동했습니다.",null));
     }
 }
