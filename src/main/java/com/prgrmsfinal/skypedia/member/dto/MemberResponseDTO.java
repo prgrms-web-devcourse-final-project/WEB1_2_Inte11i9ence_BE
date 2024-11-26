@@ -3,13 +3,14 @@ package com.prgrmsfinal.skypedia.member.dto;
 import com.prgrmsfinal.skypedia.member.entity.Member;
 
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 
 
 import java.time.LocalDateTime;
 
-@Data
+@Getter
 @NoArgsConstructor
 public class MemberResponseDTO {    //회원 조회용 DTO
     private Long id;
