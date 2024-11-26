@@ -68,6 +68,7 @@ public class SecurityConfig {
         //oauth2
         http
                 .oauth2Login((oauth2) -> oauth2
+                        .loginPage("/login")
                         .userInfoEndpoint((userInfoEndpointConfig -> userInfoEndpointConfig
                                 .userService(customOAuth2UserService)))
                         .successHandler(customSuccessHandler));
@@ -75,7 +76,7 @@ public class SecurityConfig {
         //경로별 인가 작업
         http
                 .authorizeHttpRequests((auth) -> auth
-                        .requestMatchers("/").permitAll()
+                        .requestMatchers("/", "/login").permitAll()
                         .anyRequest().authenticated());
 
         //세션 설정 : STATELESS
@@ -83,12 +84,14 @@ public class SecurityConfig {
                 .sessionManagement((session) -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
-//        http.logout(logout -> logout
-//                .logoutUrl("/logout")
-//                .invalidateHttpSession(true)
-//                .clearAuthentication(true)
-//                .deleteCookies("Authorization")
-//                .logoutSuccessUrl("http://localhost:8080/"));
+        http.logout(logout -> logout
+                .logoutUrl("/logout")
+                .logoutSuccessUrl("http://localhost:3000/")
+                .invalidateHttpSession(false)  // 세션 무효화 비활성화 (stateless 방식에선 필요 없음)
+                .clearAuthentication(true)  // SecurityContext 초기화
+                .deleteCookies("Authorization"));  // JWT가 저장된 쿠키 삭제
+
+
         return http.build();
     }
 }

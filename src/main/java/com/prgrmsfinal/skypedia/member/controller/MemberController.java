@@ -6,15 +6,10 @@ import com.prgrmsfinal.skypedia.member.entity.Member;
 import com.prgrmsfinal.skypedia.member.repository.MemberRepository;
 import com.prgrmsfinal.skypedia.member.service.MemberService;
 import com.prgrmsfinal.skypedia.oauth2.dto.CustomOAuth2User;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.file.AccessDeniedException;
@@ -74,25 +69,4 @@ public class MemberController {
             throw new AccessDeniedException("Oauth id mismatch"); // 권한 거부 예외
         }
     }
-//
-//    @PostMapping("/logout")
-//    public String logout(HttpServletRequest request, HttpServletResponse response) {
-//        // JWT 쿠키 삭제
-//        Cookie cookie = new Cookie("Authorization", null);
-//        cookie.setMaxAge(0);  // 쿠키 만료
-//        cookie.setPath("/");
-//        response.addCookie(cookie);
-//
-//        // 세션 무효화
-//        HttpSession session = request.getSession(false); // 현재 세션 가져오기, 없으면 null 반환
-//        if (session != null) {
-//            session.invalidate();  // 세션 무효화
-//        }
-//
-//        // Spring Security에서 인증 정보 제거
-//        SecurityContextHolder.clearContext();  // 인증 정보 제거
-//
-//        // 로그아웃 후 로그인 페이지로 리디렉션
-//        return "redirect:/";  // 또는 적절한 페이지로 리디렉션
-//    }
 }
