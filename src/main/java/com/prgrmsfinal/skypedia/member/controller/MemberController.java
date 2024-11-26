@@ -69,4 +69,19 @@ public class MemberController {
             throw new AccessDeniedException("Oauth id mismatch"); // 권한 거부 예외
         }
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getMyInfo(Authentication authentication) {
+        // 현재 인증된 사용자의 정보를 가져옴
+        CustomOAuth2User customOAuth2User = (CustomOAuth2User) authentication.getPrincipal();
+
+        // 사용자 고유 식별 ID(OAuth ID) 추출
+        String authenticatedOauthId = customOAuth2User.getOauthId();
+
+        // 데이터베이스에서 해당 OAuth ID로 사용자 정보 조회
+        Member member = memberRepository.findByOauthId(authenticatedOauthId);
+
+        // 조회된 사용자 정보를 응답으로 반환
+        return ResponseEntity.ok(member);
+    }
 }
