@@ -1,18 +1,12 @@
 package com.prgrmsfinal.skypedia.member.exception;
 
-public enum MemberException {
-    NOT_FOUND("NOT_FOUND", 404),
-    DUPLICATE("DUPLICATE", 409),
-    INVALID("INVALID", 400),
-    BAD_CREDENTIALS("BAD_CREDENTIALS", 401);
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
-    private MemberTaskException memberTaskException;
+@Getter
+@AllArgsConstructor
+public class MemberException extends RuntimeException {
+    private String message;
+    private int code;
 
-    MemberException(String message, int code) {
-        memberTaskException = new MemberTaskException(message, code);
-    }
-
-    public MemberTaskException get(){
-        return memberTaskException;
-    }
 }
