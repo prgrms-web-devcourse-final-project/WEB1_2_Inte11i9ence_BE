@@ -66,9 +66,10 @@ public class JWTFilter extends OncePerRequestFilter {   //토큰을 검증하는
         String role = jwtUtil.getRole(token);
 
         //memberDTO를 생성하여 값 set
-        MemberDTO memberDTO = new MemberDTO();
-        memberDTO.setOauthId(oauthId);
-        memberDTO.setRole(role);
+        MemberDTO memberDTO = MemberDTO.builder()
+                .oauthId(oauthId)
+                .role(role)
+                .build();
 
         //UserDetails에 회원 정보 객체 담기
         CustomOAuth2User customOAuth2User = new CustomOAuth2User(memberDTO);

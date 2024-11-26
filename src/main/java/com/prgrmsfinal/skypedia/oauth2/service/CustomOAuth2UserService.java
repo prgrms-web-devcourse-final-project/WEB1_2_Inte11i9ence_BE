@@ -7,6 +7,7 @@ import com.prgrmsfinal.skypedia.oauth2.dto.CustomOAuth2User;
 import com.prgrmsfinal.skypedia.oauth2.dto.GoogleResponse;
 import com.prgrmsfinal.skypedia.oauth2.dto.NaverResponse;
 import com.prgrmsfinal.skypedia.oauth2.dto.OAuth2Response;
+import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
@@ -50,42 +51,47 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService { //회원
         Member existData = memberRepository.findByOauthId(oauthId);
 
         //신규 사용자일 경우
-        if(existData == null){
-            Member member = new Member();
-            member.setOauthId(oauthId);
-            member.setEmail(oAuth2Response.getEmail());
-            member.setName(oAuth2Response.getName());
-            member.setCreatedAt(LocalDateTime.now());
-            member.setUpdatedAt(LocalDateTime.now());
-
+        if (existData == null) {
+            // 새로운 회원 생성
             String randomUsername = generateRandomUsername();
-            member.setUsername(randomUsername);
-            //member.setProfileImage("default-profile-image-url");
+            Member member = Member.builder()
+                    .oauthId(oauthId)
+                    .email(oAuth2Response.getEmail())
+                    .name(oAuth2Response.getName())
+                    .username(randomUsername)
+                    .profileImage(null) // 기본값으로 null
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .role("ROLE_USER")
+                    .build();
 
-            //권한 설정 및 회원 저장
-            member.setRole("ROLE_USER");
+            // 회원 저장
             memberRepository.save(member);
 
-            MemberDTO memberDTO = new MemberDTO();
-            memberDTO.setOauthId(oauthId);
-            memberDTO.setName(oAuth2Response.getName());
-            memberDTO.setRole("ROLE_USER");
+            // DTO 생성
+            MemberDTO memberDTO = MemberDTO.builder()
+                    .oauthId(oauthId)
+                    .name(oAuth2Response.getName())
+                    .role("ROLE_USER")
+                    .build();
 
+            // CustomOAuth2User 반환
             return new CustomOAuth2User(memberDTO);
-        }
-        else {
-
+        } else {
+            // 기존 회원 정보 갱신
             existData.setEmail(oAuth2Response.getEmail());
             existData.setName(oAuth2Response.getName());
             memberRepository.save(existData);
 
-            MemberDTO memberDTO = new MemberDTO();
-            memberDTO.setOauthId(existData.getOauthId());
-            memberDTO.setName(oAuth2Response.getName());
-            memberDTO.setRole("ROLE_USER");
+            // DTO 생성
+            MemberDTO memberDTO = MemberDTO.builder()
+                    .oauthId(existData.getOauthId())
+                    .name(oAuth2Response.getName())
+                    .role("ROLE_USER")
+                    .build();
 
+            // CustomOAuth2User 반환
             return new CustomOAuth2User(memberDTO);
-
         }
     }
     private String generateRandomUsername(){
