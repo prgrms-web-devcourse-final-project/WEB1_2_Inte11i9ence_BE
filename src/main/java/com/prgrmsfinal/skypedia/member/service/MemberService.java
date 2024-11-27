@@ -54,6 +54,12 @@ public class MemberService {
         return new MemberResponseDTO(member);  // ResponseEntity로 감싸지 않고 MemberResponseDTO만 반환
     }
 
+    public MemberResponseDTO readByUsername(String username) {
+        Member member = memberRepository.findByUsername(username)
+                .orElseThrow(MemberError.NOT_FOUND::get);
+        return new MemberResponseDTO(member);
+    }
+
 
     public void deleteMember(Long id) {
         Member member = memberRepository.findById(id)

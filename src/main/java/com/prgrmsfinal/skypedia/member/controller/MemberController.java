@@ -49,4 +49,10 @@ public class MemberController {
         memberService.deleteMember(member.getId());
         return ResponseEntity.ok(new ApiResponse<>("성공적으로 작동했습니다.",null));
     }
+
+    /** 타인 계정 조회 */
+    @GetMapping("/{username}")
+    public ResponseEntity<?> getMember(@PathVariable String username) {
+        return ResponseEntity.ok(new ApiResponse<>("성공적으로 작동했습니다.",(memberRepository.findByUsername(username))));
+    }
 }
