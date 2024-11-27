@@ -17,36 +17,36 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/member")
 public class MemberController {
     private final MemberService memberService;
-    private final MemberRepository memberRepository;
-
-    public Member getAuthenticatedMember(Authentication authentication) {
-        CustomOAuth2User customOAuth2User = (CustomOAuth2User) authentication.getPrincipal();
-        String authenticatedOauthId = customOAuth2User.getOauthId();
-        return memberRepository.findByOauthId(authenticatedOauthId);
-    }
 
     /** 내 계정 조회 */
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentMember(Authentication authentication) {
-        Member member = getAuthenticatedMember(authentication);
+        Member member = memberService.getAuthenticatedMember(authentication);
         MemberResponseDTO memberResponseDTO = memberService.read(member.getId());
-        return ResponseEntity.ok(new ApiResponse<>("성공적으로 작동했습니다.",memberResponseDTO));
+        return ResponseEntity.ok(new ApiResponse<>("성공적으로 작동했습니다.", memberResponseDTO));
     }
 
     /** 내 계정 수정 */
     @PutMapping("/me")
     public ResponseEntity<?> putCurrentMember(Authentication authentication, @RequestBody MemberRequestDTO memberRequestDTO) {
-        Member member = getAuthenticatedMember(authentication);
+        Member member = memberService.getAuthenticatedMember(authentication);
         memberService.modify(member.getId(), memberRequestDTO);
         MemberResponseDTO memberResponseDTO = new MemberResponseDTO(member);
-        return ResponseEntity.ok(new ApiResponse<>("성공적으로 작동했습니다.",memberResponseDTO));
+        return ResponseEntity.ok(new ApiResponse<>("성공적으로 작동했습니다.", memberResponseDTO));
     }
 
     /** 내 계정 탈퇴 */
     @DeleteMapping("/me")
     public ResponseEntity<?> deleteCurrentMember(Authentication authentication) {
-        Member member = getAuthenticatedMember(authentication);
+        Member member = memberService.getAuthenticatedMember(authentication);
         memberService.deleteMember(member.getId());
-        return ResponseEntity.ok(new ApiResponse<>("성공적으로 작동했습니다.",null));
+        return ResponseEntity.ok(new ApiResponse<>("성공적으로 작동했습니다.", null));
+    }
+
+    /** 타인 계정 조회 */
+    @GetMapping("/{username}")
+    public ResponseEntity<?> getMember(@PathVariable String username) {
+        MemberResponseDTO memberResponseDTO = memberService.readByUsername(username);
+        return ResponseEntity.ok(new ApiResponse<>("성공적으로 작동했습니다.", memberResponseDTO));
     }
 }
