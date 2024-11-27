@@ -6,6 +6,7 @@ import com.prgrmsfinal.skypedia.member.dto.MemberResponseDTO;
 import com.prgrmsfinal.skypedia.member.entity.Member;
 import com.prgrmsfinal.skypedia.member.exception.MemberError;
 import com.prgrmsfinal.skypedia.member.repository.MemberRepository;
+import com.prgrmsfinal.skypedia.oauth2.dto.CustomOAuth2User;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import lombok.extern.log4j.Log4j2;
 import org.hibernate.Session;
 
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +33,12 @@ public class MemberService {
 
     @PersistenceContext
     private EntityManager entityManager;    // 필터를 사용할 엔티티 매니저 주입
+
+    public Member getAuthenticatedMember(Authentication authentication) {
+        CustomOAuth2User customOAuth2User = (CustomOAuth2User) authentication.getPrincipal();
+        String authenticatedOauthId = customOAuth2User.getOauthId();
+        return memberRepository.findByOauthId(authenticatedOauthId);
+    }
 
     //회원 수정
     public void modify(Long id, MemberRequestDTO memberRequestDTO) {
