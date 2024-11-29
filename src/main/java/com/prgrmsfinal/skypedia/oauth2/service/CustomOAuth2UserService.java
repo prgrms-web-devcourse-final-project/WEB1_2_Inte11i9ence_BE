@@ -22,7 +22,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService { //검증
 
     private final MemberRepository memberRepository;
     private final MemberCreationService memberCreationService;
-    
+
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
 
@@ -30,16 +30,13 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService { //검증
         log.debug(oAuth2User);
 
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
-        OAuth2Response oAuth2Response = null;
-        if(registrationId.equals("naver")){
-            oAuth2Response = new NaverResponse(oAuth2User.getAttributes());
-        }
-        else if(registrationId.equals("google")){
-            oAuth2Response = new GoogleResponse(oAuth2User.getAttributes());
-        }
-        else{
-            return null;
-        }
+
+        OAuth2Response oAuth2Response = switch (registrationId) {
+            case "naver" -> new NaverResponse(oAuth2User.getAttributes());
+            case "google" -> new GoogleResponse(oAuth2User.getAttributes());
+            default -> throw new IllegalArgumentException("Unsupported registrationId: " + registrationId);
+        };
+
         //리소스 서버에서 발급 받은 정보로 사용자를 특정할 아이디값을 만듬
         String oauthId = oAuth2Response.getProvider()+" "+oAuth2Response.getProviderId();
         Member existData = memberRepository.findByOauthId(oauthId);
