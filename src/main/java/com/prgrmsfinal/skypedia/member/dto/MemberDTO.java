@@ -3,10 +3,8 @@ package com.prgrmsfinal.skypedia.member.dto;
 import com.prgrmsfinal.skypedia.member.entity.Role;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
 @Getter
-@Setter
 @Builder
 public class MemberDTO {    //페이로드용 DTO
 
