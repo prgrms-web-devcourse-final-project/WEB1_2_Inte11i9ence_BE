@@ -7,7 +7,6 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 @RequiredArgsConstructor
@@ -26,7 +25,7 @@ public class CustomOAuth2User implements OAuth2User {
         collection.add(new GrantedAuthority() {
             @Override
             public String getAuthority() {
-                return memberDTO.getRole();
+                return memberDTO.getRole().name();
             }
         });
         return collection;

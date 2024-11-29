@@ -4,6 +4,7 @@ import com.prgrmsfinal.skypedia.global.entity.BaseTime;
 import com.prgrmsfinal.skypedia.member.entity.Member;
 
 
+import com.prgrmsfinal.skypedia.member.entity.Role;
 import lombok.Getter;
 
 @Getter
@@ -13,7 +14,7 @@ public class MemberResponseDTO extends BaseTime {    //회원 조회용 DTO
     private final String name;
     private final String email;
     private final String username;
-    private final String role;
+    private final Role role;
     private final String profileImage;
 
 

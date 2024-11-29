@@ -35,8 +35,9 @@ public class Member extends BaseTime {
     @Column(unique = true)
     private String username;        //최초회원가입시, 제공되는 랜덤 닉네임
 
+    @Enumerated(EnumType.STRING)    // enum 값을 문자열로 저장
     @Column(nullable = false)
-    private String role;            //유저 권한
+    private Role role;              //유저 권한
 
     @Column(nullable = false)
     private String profileImage;    //사용자 프로필사진
