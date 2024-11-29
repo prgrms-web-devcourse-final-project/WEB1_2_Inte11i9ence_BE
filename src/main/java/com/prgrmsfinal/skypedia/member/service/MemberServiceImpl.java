@@ -89,21 +89,27 @@ public class MemberServiceImpl implements MemberService{
     @Transactional
     @Scheduled(cron = "0 0 0 1 * ?") // 매달 1일 자정에 실행
     public void physicalDeleteMember() {
-        // Hibernate Session을 가져옵니다.
         Session session = entityManager.unwrap(Session.class);
 
-        // 필터 비활성화: 논리 삭제된 데이터도 조회 가능
-        session.disableFilter("withdrawnFilter");
+        try {
+            // 필터 비활성화: 논리 삭제된 데이터도 조회 가능
+            session.disableFilter("withdrawnFilter");
 
-        // 탈퇴한 회원 조회 (withdrawn = true, withdrawnAt < 두 달 전)
-        LocalDateTime twoMonthsAgo = LocalDateTime.now().minusMonths(2);
-        List<Member> membersToDelete = memberRepository.findByWithdrawnTrueAndWithdrawnAtBefore(twoMonthsAgo);
+            // 탈퇴한 회원 조회 (withdrawn = true, withdrawnAt < 두 달 전)
+            LocalDateTime twoMonthsAgo = LocalDateTime.now().minusMonths(2);
+            List<Member> membersToDelete = memberRepository.findByWithdrawnTrueAndWithdrawnAtBefore(twoMonthsAgo);
 
-        // 물리 삭제
-        memberRepository.deleteAll(membersToDelete);
+            // 물리 삭제
+            memberRepository.deleteAll(membersToDelete);
 
-        // 필터 다시 활성화
-        session.enableFilter("withdrawnFilter");
+        } catch (Exception e) {
+            // 로깅 추가
+            log.error("회원 삭제 중 오류 발생: {}", e.getMessage(), e);
+            throw new RuntimeException("회원 삭제 처리 중 오류가 발생했습니다.", e);
 
+        } finally {
+            // 반드시 필터 다시 활성화
+            session.enableFilter("withdrawnFilter");
+        }
     }
 }
