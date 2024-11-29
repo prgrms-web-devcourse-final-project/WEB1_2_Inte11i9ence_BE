@@ -1,10 +1,9 @@
 package com.prgrmsfinal.skypedia.member.entity;
 
+import com.prgrmsfinal.skypedia.global.entity.BaseTime;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
@@ -19,7 +18,7 @@ import java.time.LocalDateTime;
 @EntityListeners(value = {AuditingEntityListener.class})
 @FilterDef(name = "withdrawnFilter", parameters = @ParamDef(name = "withdrawn", type = Boolean.class))
 @Filter(name = "withdrawnFilter", condition = "withdrawn = :withdrawn")
-public class Member {
+public class Member extends BaseTime {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;                //자동생성 고유식별자
@@ -38,15 +37,8 @@ public class Member {
 
     private String profileImage;    //사용자 프로필사진
 
-    @CreatedDate
-    private LocalDateTime createdAt;//회원가입 날짜
-    @LastModifiedDate
-    private LocalDateTime updatedAt;//업데이트 날짜
-
-    @Column(name = "withdrawn")
     private boolean withdrawn = Boolean.FALSE; // 탈퇴 여부
 
-    @Column(name = "withdrawnAt")
     private LocalDateTime withdrawnAt;//탈퇴 날짜
 
 

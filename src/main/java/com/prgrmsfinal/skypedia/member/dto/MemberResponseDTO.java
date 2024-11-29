@@ -1,27 +1,21 @@
 package com.prgrmsfinal.skypedia.member.dto;
 
+import com.prgrmsfinal.skypedia.global.entity.BaseTime;
 import com.prgrmsfinal.skypedia.member.entity.Member;
 
-import lombok.Data;
+
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-
-
-
-import java.time.LocalDateTime;
 
 @Getter
-@NoArgsConstructor
-public class MemberResponseDTO {    //회원 조회용 DTO
-    private Long id;
-    private String oauthId;
-    private String name;
-    private String email;
-    private String username;
-    private String role;
-    private String profileImage;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+public class MemberResponseDTO extends BaseTime {    //회원 조회용 DTO
+    private final Long id;
+    private final String oauthId;
+    private final String name;
+    private final String email;
+    private final String username;
+    private final String role;
+    private final String profileImage;
+
 
     public MemberResponseDTO(Member member) {
         this.id = member.getId();
@@ -31,7 +25,5 @@ public class MemberResponseDTO {    //회원 조회용 DTO
         this.username = member.getUsername();
         this.role = member.getRole();
         this.profileImage = member.getProfileImage();
-        this.createdAt = member.getCreatedAt();
-        this.updatedAt = member.getUpdatedAt();
     }
 }
