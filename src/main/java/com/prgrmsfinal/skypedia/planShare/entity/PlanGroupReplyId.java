@@ -1,14 +1,12 @@
 package com.prgrmsfinal.skypedia.planShare.entity;
 
-import jakarta.persistence.Embeddable;
-import lombok.Data;
-
 import java.io.Serializable;
-import java.util.Objects;
+
+import jakarta.persistence.Embeddable;
 
 @Embeddable
 public class PlanGroupReplyId implements Serializable {
-    private Long planGroupId;
+	private Long planGroupId;
 
-    private Long memberId;
+	private Long memberId;
 }

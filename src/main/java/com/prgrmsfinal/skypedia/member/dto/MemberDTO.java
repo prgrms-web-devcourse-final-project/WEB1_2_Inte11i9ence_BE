@@ -9,7 +9,7 @@ import lombok.Setter;
 @Builder
 public class MemberDTO {    //페이로드용 DTO
 
-    private String role;
-    private String name;
-    private String oauthId;
+	private String role;
+	private String name;
+	private String oauthId;
 }
