@@ -1,6 +1,7 @@
 package com.prgrmsfinal.skypedia.oauth2.jwt;
 
 import com.prgrmsfinal.skypedia.member.dto.MemberDTO;
+import com.prgrmsfinal.skypedia.member.entity.Role;
 import com.prgrmsfinal.skypedia.oauth2.dto.CustomOAuth2User;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -66,7 +67,7 @@ public class JWTFilter extends OncePerRequestFilter {   //토큰을 검증하는
         //memberDTO를 생성하여 값 set
         MemberDTO memberDTO = MemberDTO.builder()
                 .oauthId(oauthId)
-                .role(role)
+                .role(Role.valueOf(role))
                 .build();
 
         //UserDetails에 회원 정보 객체 담기
