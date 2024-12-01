@@ -1,17 +1,17 @@
 package com.prgrmsfinal.skypedia.planShare.service;
 
-import com.prgrmsfinal.skypedia.planShare.dto.PlanGroupDTO;
-
 import java.util.List;
 
+import com.prgrmsfinal.skypedia.planShare.dto.PlanGroupDTO;
+
 public interface PlanGroupService {
-    List<PlanGroupDTO> readAll(PlanGroupDTO planGroupDTO);
+	List<PlanGroupDTO> readAll(PlanGroupDTO planGroupDTO);
 
-    PlanGroupDTO read(Long id);
+	PlanGroupDTO read(Long id);
 
-    PlanGroupDTO register(PlanGroupDTO planGroupDTO);
+	PlanGroupDTO register(PlanGroupDTO planGroupDTO);
 
-    PlanGroupDTO update(PlanGroupDTO planGroupDTO);
+	PlanGroupDTO update(PlanGroupDTO planGroupDTO);
 
-    void delete(Long id);
+	void delete(Long id);
 }

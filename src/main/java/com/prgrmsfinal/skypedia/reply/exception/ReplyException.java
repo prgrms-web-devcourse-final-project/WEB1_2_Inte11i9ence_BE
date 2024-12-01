@@ -6,6 +6,6 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class ReplyException extends RuntimeException {
-    private String message;
-    private int code;
+	private String message;
+	private int code;
 }

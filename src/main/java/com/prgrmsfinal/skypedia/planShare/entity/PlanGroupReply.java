@@ -1,11 +1,13 @@
 package com.prgrmsfinal.skypedia.planShare.entity;
 
 import com.prgrmsfinal.skypedia.member.entity.Member;
-import com.prgrmsfinal.skypedia.reply.entity.Reply;
-import jakarta.persistence.*;
+
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MapsId;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
@@ -14,14 +16,14 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class PlanGroupReply {
 
-    @EmbeddedId
-    private PlanGroupReplyId id;
+	@EmbeddedId
+	private PlanGroupReplyId id;
 
-    @ManyToOne
-    @MapsId("planGroupId")
-    private PlanGroup planGroup;
+	@ManyToOne
+	@MapsId("planGroupId")
+	private PlanGroup planGroup;
 
-    @ManyToOne
-    @MapsId("memberId")
-    private Member member;
+	@ManyToOne
+	@MapsId("memberId")
+	private Member member;
 }

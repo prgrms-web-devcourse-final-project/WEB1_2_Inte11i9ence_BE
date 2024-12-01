@@ -11,4 +11,5 @@ public class MemberDTO {    //페이로드용 DTO
     private Role role;
     private String name;
     private String oauthId;
+
 }
