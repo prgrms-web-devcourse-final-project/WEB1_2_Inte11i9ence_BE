@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 import org.springframework.data.annotation.LastModifiedDate;
 
 import com.prgrmsfinal.skypedia.member.entity.Member;
-import com.prgrmsfinal.skypedia.post.entity.key.PostLikesId;
+import com.prgrmsfinal.skypedia.post.entity.key.PostScrapId;
 
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
@@ -19,9 +19,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PostLikes {
+public class PostScrap {
 	@EmbeddedId
-	private PostLikesId id;
+	private PostScrapId id;
 
 	@ManyToOne
 	@MapsId("postId")
@@ -32,5 +32,5 @@ public class PostLikes {
 	private Member member;
 
 	@LastModifiedDate
-	private LocalDateTime likedAt;
+	private LocalDateTime scrapedAt;
 }

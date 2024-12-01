@@ -1,5 +1,13 @@
 package com.prgrmsfinal.skypedia.post.service;
 
+import java.util.List;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Service;
+
 import com.prgrmsfinal.skypedia.member.entity.Member;
 import com.prgrmsfinal.skypedia.member.service.MemberService;
 import com.prgrmsfinal.skypedia.post.dto.PostRequestDTO;
@@ -9,228 +17,270 @@ import com.prgrmsfinal.skypedia.post.entity.PostCategory;
 import com.prgrmsfinal.skypedia.post.exception.PostError;
 import com.prgrmsfinal.skypedia.post.repository.PostLikesRepository;
 import com.prgrmsfinal.skypedia.post.repository.PostRepository;
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Service;
+import com.prgrmsfinal.skypedia.post.repository.PostScrapRepository;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 // ※ 추후 검색 기능 구현 및 로깅 작업 필요함.
 
 @Service
 @RequiredArgsConstructor
 public class PostServiceImpl implements PostService {
-    private final RedisTemplate<String, String> redisTemplate;
+	private final RedisTemplate<String, String> redisTemplate;
 
-    private final PostRepository postRepository;
+	private final PostRepository postRepository;
 
-    private final PostLikesRepository postLikesRepository;
+	private final PostLikesRepository postLikesRepository;
 
-    private final PostCategoryService postCategoryService;
+	private final PostScrapRepository postScrapRepository;
 
-    private final MemberService memberService;
+	private final PostCategoryService postCategoryService;
 
-    @Value("${post.views.prefix.key}")
-    private String POST_VIEWS_PREFIX_KEY;
+	private final MemberService memberService;
 
-    @Value("${post.likes.prefix.key}")
-    private String POST_LIKES_PREFIX_KEY;
+	@Value("${post.views.prefix.key}")
+	private String POST_VIEWS_PREFIX_KEY;
 
-    @Value("${post.unlikes.prefix.key}")
-    private String POST_UNLIKES_PREFIX_KEY;
+	@Value("${post.likes.prefix.key}")
+	private String POST_LIKES_PREFIX_KEY;
 
-    @Override
-    public PostResponseDTO.Read read(Authentication authentication, Long postId) {
-        Post post = postRepository.findByIdAndDeleted(postId, false)
-                .orElseThrow(PostError.CANNOT_FOUND_POST::getException);
+	@Value("${post.unlikes.prefix.key}")
+	private String POST_UNLIKES_PREFIX_KEY;
 
-        incrementViews(postId);
+	@Value("${post.scrap.prefix.key}")
+	private String POST_SCRAP_PREFIX_KEY;
 
-        PostResponseDTO.Read response = PostResponseDTO.Read.byEntity(post);
+	@Value("${post.unscrap.prefix.key}")
+	private String POST_UNSCRAP_PREFIX_KEY;
 
-        response.setViewsAndLikes(getViews(post), getLikes(post), isCurrentMemberLiked(authentication, post));
+	@Override
+	public PostResponseDTO.Read read(Authentication authentication, Long postId) {
+		Post post = postRepository.findByIdAndDeleted(postId, false)
+			.orElseThrow(PostError.CANNOT_FOUND_POST::getException);
 
-        return response;
-    }
+		incrementViews(postId);
 
-    @Override
-    public List<PostResponseDTO.Read> readAll(String category, Long lastId, String order) {
-        if (!postCategoryService.existsByName(category)) {
-            throw PostError.CANNOT_FOUND_CATEGORY.getException();
-        }
+		// 연동 작업이 필요함!!!
 
-        List<Post> posts = null;
+		// PostResponseDTO.Read response = PostResponseDTO.Read(post);
 
-        if (StringUtils.isNotBlank(category)) {
-            if (StringUtils.isBlank(order)) {
-                posts = postRepository.findRecentPostsAfterId(lastId, false, category);
-            } else {
-                switch (order) {
-                    case "views":
-                        posts = postRepository.findPostsByViews(lastId, false, category);
-                        break;
-                    case "likes":
-                        posts = postRepository.findPostsByLikes(lastId, false, category);
-                        break;
-                    case "title":
-                        posts = postRepository.findPostsByTitle(lastId, false, category);
-                        break;
-                    case "rating":
-                        posts = postRepository.findPostsByRating(lastId, false, category);
-                        break;
-                    default:
-                        throw PostError.INVALID_SORT_ORDER.getException();
-                }
-            }
-        }
+		// response.setViewsAndLikes(getViews(post), getLikes(post), isCurrentMemberLiked(authentication, post));
 
-        if (posts == null || posts.isEmpty()) {
-            throw PostError.CANNOT_FOUND_POSTS.getException();
-        }
+		return null;
+	}
 
-        return posts.stream()
-                .map(PostResponseDTO.Read::byEntity)
-                .collect(Collectors.toList());
-    }
+	@Override
+	public PostResponseDTO.ReadAll readAll(String category, Long lastId, String order) {
+		if (!postCategoryService.existsByName(category)) {
+			throw PostError.CANNOT_FOUND_CATEGORY.getException();
+		}
 
-    @Override
-    public void create(Authentication authentication, PostRequestDTO.Create request) {
-        PostCategory category = postCategoryService.getByName(request.getCategory())
-                .orElseThrow(PostError.CANNOT_FOUND_CATEGORY::getException);
+		List<Post> posts = null;
 
-        Member member = memberService.getAuthenticatedMember(authentication);
+		if (StringUtils.isNotBlank(category)) {
+			if (StringUtils.isBlank(order)) {
+				posts = postRepository.findRecentPostsAfterId(lastId, false, category);
+			} else {
+				posts = switch (order) {
+					case "views" -> postRepository.findPostsByViews(lastId, false, category);
+					case "likes" -> postRepository.findPostsByLikes(lastId, false, category);
+					case "title" -> postRepository.findPostsByTitle(lastId, false, category);
+					case "rating" -> postRepository.findPostsByRating(lastId, false, category);
+					default -> throw PostError.INVALID_SORT_ORDER.getException();
+				};
+			}
+		}
 
-        postRepository.save(Post.builder()
-                .title(request.getTitle())
-                .content(request.getContent())
-                .category(category)
-                .rating(request.getRate())
-                .member(member)
-                .build());
-    }
+		if (posts == null || posts.isEmpty()) {
+			throw PostError.CANNOT_FOUND_POSTS.getException();
+		}
 
-    @Override
-    public void modify(Authentication authentication, Long postId, PostRequestDTO.Modify request) {
-        Post post = postRepository.findByIdAndDeleted(postId, false)
-                .orElseThrow(PostError.CANNOT_FOUND_POST::getException);
+		// 연동 작업이 필요함!!!
+		return null;
+	}
 
-        Member member = memberService.getAuthenticatedMember(authentication);
+	@Override
+	public List<String> create(Authentication authentication, PostRequestDTO.Create request) {
+		PostCategory category = postCategoryService.getByName(request.getCategory())
+			.orElseThrow(PostError.CANNOT_FOUND_CATEGORY::getException);
 
-        if (!post.getMember().getId().equals(member.getId())) {
-            throw PostError.BAD_REQUEST_POST_MODIFY.getException();
-        }
+		Member member = memberService.getAuthenticatedMember(authentication);
 
-        post.modify(request.getTitle(), request.getContent());
+		postRepository.save(Post.builder()
+			.title(request.getTitle())
+			.content(request.getContent())
+			.category(category)
+			.rating(request.getRating())
+			.member(member)
+			.build());
 
-        postRepository.save(post);
-    }
+		// 연동 작업이 필요함!!!
+		return null;
+	}
 
-    @Override
-    public void delete(Authentication authentication, Long postId) {
-        Post post = postRepository.findByIdAndDeleted(postId, false)
-                .orElseThrow(PostError.CANNOT_FOUND_POST::getException);
+	@Override
+	public List<String> modify(Authentication authentication, Long postId, PostRequestDTO.Modify request) {
+		Post post = postRepository.findByIdAndDeleted(postId, false)
+			.orElseThrow(PostError.CANNOT_FOUND_POST::getException);
 
-        Member member = memberService.getAuthenticatedMember(authentication);
+		Member member = memberService.getAuthenticatedMember(authentication);
 
-        if (!post.getMember().getId().equals(member.getId())) {
-            throw PostError.BAD_REQUEST_POST_DELETE.getException();
-        }
+		if (!post.getMember().getId().equals(member.getId())) {
+			throw PostError.BAD_REQUEST_POST_MODIFY.getException();
+		}
 
-        post.delete();
+		post.modify(request.getTitle(), request.getContent());
 
-        postRepository.save(post);
-    }
+		postRepository.save(post);
 
-    @Override
-    public void restore(Authentication authentication, Long postId) {
-        Post post = postRepository.findByIdAndDeleted(postId, true)
-                .orElseThrow(PostError.CANNOT_FOUND_POST::getException);
+		// 연동 작업이 필요함!!!
+		return null;
+	}
 
-        Member member = memberService.getAuthenticatedMember(authentication);
+	@Override
+	public void delete(Authentication authentication, Long postId) {
+		Post post = postRepository.findByIdAndDeleted(postId, false)
+			.orElseThrow(PostError.CANNOT_FOUND_POST::getException);
 
-        if (!member.getRole().equals("ROLE_ADMIN")) {
-            throw PostError.BAD_REQUEST_POST_RESTORE.getException();
-        }
+		Member member = memberService.getAuthenticatedMember(authentication);
 
-        post.restore();
+		if (!post.getMember().getId().equals(member.getId())) {
+			throw PostError.BAD_REQUEST_POST_DELETE.getException();
+		}
 
-        postRepository.save(post);
-    }
+		post.delete();
 
-    @Override
-    public boolean toggleLikes(Authentication authentication, Long postId) {
-        Post post = postRepository.findByIdAndDeleted(postId, false)
-                .orElseThrow(PostError.CANNOT_FOUND_POST::getException);
+		postRepository.save(post);
+	}
 
-        Long memberId = memberService.getAuthenticatedMember(authentication).getId();
+	@Override
+	public void restore(Authentication authentication, Long postId) {
+		Post post = postRepository.findByIdAndDeleted(postId, true)
+			.orElseThrow(PostError.CANNOT_FOUND_POST::getException);
 
-        String likesKey = StringUtils.join(POST_LIKES_PREFIX_KEY, postId);
-        String unlikesKey = StringUtils.join(POST_UNLIKES_PREFIX_KEY, postId);
-        boolean isLiked = isCurrentMemberLiked(authentication, post);
+		Member member = memberService.getAuthenticatedMember(authentication);
 
-        if (!isLiked) {
-            redisTemplate.opsForSet().add(likesKey, memberId.toString());
-            redisTemplate.opsForSet().remove(unlikesKey, memberId.toString());
-        } else {
-            redisTemplate.opsForSet().add(unlikesKey, memberId.toString());
-            redisTemplate.opsForSet().remove(likesKey, memberId.toString());
-        }
+		if (!member.getRole().equals("ROLE_ADMIN")) {
+			throw PostError.BAD_REQUEST_POST_RESTORE.getException();
+		}
 
-        return isLiked;
-    }
+		post.restore();
 
-    private Long getLikes(Post post) {
-        String likesKey = StringUtils.join(POST_LIKES_PREFIX_KEY, post.getId());
-        String unlikesKey = StringUtils.join(POST_UNLIKES_PREFIX_KEY, post.getId());
-        Long likes = post.getLikes();
+		postRepository.save(post);
+	}
 
-        if (Boolean.TRUE.equals(redisTemplate.hasKey(likesKey))) {
-            likes += redisTemplate.opsForSet().size(likesKey);
-        }
+	@Override
+	public boolean toggleLikes(Authentication authentication, Long postId) {
+		Post post = postRepository.findByIdAndDeleted(postId, false)
+			.orElseThrow(PostError.CANNOT_FOUND_POST::getException);
 
-        if (Boolean.TRUE.equals(redisTemplate.hasKey(unlikesKey))) {
-            likes += redisTemplate.opsForSet().size(likesKey);
-        }
+		Long memberId = memberService.getAuthenticatedMember(authentication).getId();
 
-        return likes;
-    }
+		String likesKey = POST_LIKES_PREFIX_KEY + postId;
+		String unlikesKey = POST_UNLIKES_PREFIX_KEY + postId;
+		boolean isLiked = isCurrentMemberLiked(authentication, post);
 
-    private Long getViews(Post post) {
-        Long postId = post.getId();
-        Long views = post.getViews();
+		if (!isLiked) {
+			redisTemplate.opsForSet().add(likesKey, memberId.toString());
+			redisTemplate.opsForSet().remove(unlikesKey, memberId.toString());
+		} else {
+			redisTemplate.opsForSet().add(unlikesKey, memberId.toString());
+			redisTemplate.opsForSet().remove(likesKey, memberId.toString());
+		}
 
-        if (Boolean.TRUE.equals(redisTemplate.hasKey(StringUtils.join(POST_VIEWS_PREFIX_KEY, postId)))) {
-            views += (Long) redisTemplate.opsForHash().get(POST_VIEWS_PREFIX_KEY, postId);
-        }
+		return !isLiked;
+	}
 
-        return views;
-    }
+	@Override
+	public boolean toggleScrap(Authentication authentication, Long postId) {
+		Post post = postRepository.findByIdAndDeleted(postId, false)
+			.orElseThrow(PostError.CANNOT_FOUND_POST::getException);
 
-    private void incrementViews(Long postId) {
-        redisTemplate.opsForHash().increment(POST_VIEWS_PREFIX_KEY, postId.toString(), 1);
-    }
+		Long memberId = memberService.getAuthenticatedMember(authentication).getId();
 
-    private boolean isCurrentMemberLiked(Authentication authentication, Post post) {
-        String likesKey = StringUtils.join(POST_LIKES_PREFIX_KEY, post.getId());
-        String unlikesKey = StringUtils.join(POST_UNLIKES_PREFIX_KEY, post.getId());
-        Long memberId = memberService.getAuthenticatedMember(authentication).getId();
+		String scrapKey = POST_SCRAP_PREFIX_KEY + postId;
+		String unscrapKey = POST_UNSCRAP_PREFIX_KEY + postId;
+		boolean isScraped = isCurrentMemberScraped(authentication, post);
 
-        if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(likesKey, memberId))) {
-            return true;
-        }
+		if (!isScraped) {
+			redisTemplate.opsForSet().add(scrapKey, memberId.toString());
+			redisTemplate.opsForSet().remove(unscrapKey, memberId.toString());
+		} else {
+			redisTemplate.opsForSet().add(unscrapKey, memberId.toString());
+			redisTemplate.opsForSet().remove(scrapKey, memberId.toString());
+		}
 
-        if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(unlikesKey, memberId))) {
-            return false;
-        }
+		return !isScraped;
+	}
 
-        if (postLikesRepository.existsByPostIdAndMemberId(post.getId(), memberId)) {
-            return true;
-        }
+	private Long getLikes(Post post) {
+		String likesKey = StringUtils.join(POST_LIKES_PREFIX_KEY, post.getId());
+		String unlikesKey = StringUtils.join(POST_UNLIKES_PREFIX_KEY, post.getId());
+		Long likes = post.getLikes();
 
-        return false;
-    }
+		if (Boolean.TRUE.equals(redisTemplate.hasKey(likesKey))) {
+			likes += redisTemplate.opsForSet().size(likesKey);
+		}
+
+		if (Boolean.TRUE.equals(redisTemplate.hasKey(unlikesKey))) {
+			likes += redisTemplate.opsForSet().size(likesKey);
+		}
+
+		return likes;
+	}
+
+	private Long getViews(Post post) {
+		Long postId = post.getId();
+		Long views = post.getViews();
+
+		if (Boolean.TRUE.equals(redisTemplate.hasKey(StringUtils.join(POST_VIEWS_PREFIX_KEY, postId)))) {
+			views += (Long)redisTemplate.opsForHash().get(POST_VIEWS_PREFIX_KEY, postId);
+		}
+
+		return views;
+	}
+
+	private void incrementViews(Long postId) {
+		redisTemplate.opsForHash().increment(POST_VIEWS_PREFIX_KEY, postId.toString(), 1);
+	}
+
+	private boolean isCurrentMemberLiked(Authentication authentication, Post post) {
+		String likesKey = StringUtils.join(POST_LIKES_PREFIX_KEY, post.getId());
+		String unlikesKey = StringUtils.join(POST_UNLIKES_PREFIX_KEY, post.getId());
+		Long memberId = memberService.getAuthenticatedMember(authentication).getId();
+
+		if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(likesKey, memberId))) {
+			return true;
+		}
+
+		if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(unlikesKey, memberId))) {
+			return false;
+		}
+
+		if (postLikesRepository.existsByPostIdAndMemberId(post.getId(), memberId)) {
+			return true;
+		}
+
+		return false;
+	}
+
+	private boolean isCurrentMemberScraped(Authentication authentication, Post post) {
+		String scrapKey = POST_SCRAP_PREFIX_KEY + post.getId();
+		String unscrapKey = POST_UNLIKES_PREFIX_KEY + post.getId();
+		Long memberId = memberService.getAuthenticatedMember(authentication).getId();
+
+		if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(scrapKey, memberId))) {
+			return true;
+		}
+
+		if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(unscrapKey, memberId))) {
+			return false;
+		}
+
+		if (postScrapRepository.existsByPostIdAndMemberId(post.getId(), memberId)) {
+			return true;
+		}
+
+		return false;
+	}
 }
