@@ -36,6 +36,10 @@ jobs:
       - name: Push Docker Image
         run: docker push ${{ secrets.DOCKER_USERNAME }}/spring-ubuntu-app:latest
 
+
+  deploy:
+    runs-on: self-hosted
+    steps:
       # 7. Docker 이미지 Pull 및 배포
       - name: Deploy Docker Container
         run: |
