@@ -1,45 +1,51 @@
 package com.prgrmsfinal.skypedia.member.entity;
 
+import com.prgrmsfinal.skypedia.global.entity.BaseTime;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
+import org.hibernate.annotations.*;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Getter
+@Setter
 @ToString
 @Builder
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @EntityListeners(value = {AuditingEntityListener.class})
-public class Member {
+@FilterDef(name = "withdrawnFilter", parameters = @ParamDef(name = "withdrawn", type = Boolean.class))
+@Filter(name = "withdrawnFilter", condition = "withdrawn = :withdrawn")
+public class Member extends BaseTime {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    private String providerId;
+    private Long id;                //자동생성 고유식별자
 
     @Column(nullable = false)
-    private String name;
+    private String oauthId;         //구글, 네이버에서 제공하는 고유식별자
+
+    @Column(nullable = false)
+    private String name;            //구글, 네이버에서 제공하는 본명
+
+    @Column(nullable = false)
+    private String email;           //구글, 네이버에서 제공하는 이메일
 
     @Column(unique = true)
-    private String username;
+    private String username;        //최초회원가입시, 제공되는 랜덤 닉네임
 
-    private String role;
-    private String profileImage;
+    @Enumerated(EnumType.STRING)    // enum 값을 문자열로 저장
+    @Column(nullable = false)
+    private Role role;              //유저 권한
 
-    @CreatedDate
-    private LocalDateTime createdAt;
-    @LastModifiedDate
-    private LocalDateTime updatedAt;
+    @Column(nullable = false)
+    private String profileImage;    //사용자 프로필사진
 
-    private boolean withdrawn;
+    @Column(nullable = false)
+    private boolean withdrawn = Boolean.FALSE; // 탈퇴 여부
 
-    @LastModifiedDate
-    private LocalDateTime withdrawnAt;
+    private LocalDateTime withdrawnAt;//탈퇴 날짜
 
 
 }
