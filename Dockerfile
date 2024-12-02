@@ -30,7 +30,10 @@ RUN apt-get update && apt-get install -y \
     openjdk-17-jdk \
     && apt-get clean
 
-# 8. JAR 파일 복사 및 실행
+# 8. JAR 파일 복사
 WORKDIR /app
 COPY --from=builder /app/build/libs/*.jar app.jar
+
+# 9. Spring 프로파일 설정 및 실행
+ENV SPRING_PROFILES_ACTIVE=prod
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
