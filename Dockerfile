@@ -33,4 +33,4 @@ RUN apt-get update && apt-get install -y \
 # 8. JAR 파일 복사 및 실행
 WORKDIR /app
 COPY --from=builder /app/build/libs/*.jar app.jar
-ENTRYPOINT ["java", "-jar", "/app/app.jar", "--spring.profiles.active=dev"]
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
