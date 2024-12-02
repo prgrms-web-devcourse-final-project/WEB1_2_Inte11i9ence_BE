@@ -4,7 +4,7 @@ on:
   workflow_dispatch:  # 수동 트리거 이벤트
 
 jobs:
-  build-push-deploy:
+  build-push:
     runs-on: ubuntu-24.04
     steps:
       # 1. 저장소 체크아웃
@@ -38,6 +38,7 @@ jobs:
 
 
   deploy:
+    needs: build-push
     runs-on: self-hosted
     steps:
       # 7. Docker 이미지 Pull 및 배포
