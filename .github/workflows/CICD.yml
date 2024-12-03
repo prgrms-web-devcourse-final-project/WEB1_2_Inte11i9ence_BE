@@ -74,7 +74,7 @@ jobs:
           sudo docker run -d --name redis-container --network my-network redis || true
       # 5. 새 컨테이너 실행
       - name: Run New Container and rout
-        run: docker run -d --name ${{ env.PROJECT_NAME }} --network my-network -p 8080:8080 my-spring-app
+        run: docker run -d --name spring-ubuntu-app --network my-network -p 8080:8080 ${{ secrets.DOCKER_USERNAME }}/spring-ubuntu-app:latest
       
       # 6. 오래된 이미지 삭제
       - name: Remove Old Images
