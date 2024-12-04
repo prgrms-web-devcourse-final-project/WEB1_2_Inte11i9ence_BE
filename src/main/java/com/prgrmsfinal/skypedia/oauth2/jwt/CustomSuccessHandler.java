@@ -50,7 +50,7 @@ public class CustomSuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         // 쿠키에 저장된 토큰 값 로그로 출력
         logger.info("Stored token in cookie: " + token);
-        response.sendRedirect("http://localhost:5173/");
+        response.sendRedirect("http://localhost:5173");
     }
 
     private Cookie createCookie(String key, String value) {
