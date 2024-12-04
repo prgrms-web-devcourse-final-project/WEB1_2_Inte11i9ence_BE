@@ -41,7 +41,7 @@ public class CustomSuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         response.addCookie(createCookie("Authorization", token));
         /** 리디렉션 코드 (백엔드팀 테스트용) */
-//        response.sendRedirect("http://localhost:3000/");
+        response.sendRedirect("http://localhost:5173/");
 //        response.sendRedirect("http://localhost:8080/");
     }
 
