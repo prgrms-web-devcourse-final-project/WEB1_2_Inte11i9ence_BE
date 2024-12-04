@@ -40,9 +40,17 @@ public class CustomSuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String token = jwtUtil.createJwt(oauthId, role, 60*60*60L);
 
         response.addCookie(createCookie("Authorization", token));
-        /** 리디렉션 코드 (백엔드팀 테스트용) */
-        response.sendRedirect("http://localhost:5173/");
-//        response.sendRedirect("http://localhost:8080/");
+
+        // SameSite=None 설정을 직접 응답 헤더로 추가
+        response.setHeader("Set-Cookie", "Authorization=" + token + "; Max-Age=216000; Path=/; HttpOnly; SameSite=None");
+
+        // 현재 도메인 로그로 출력
+        String domain = request.getServerName();
+        logger.info("Current domain: " + domain);
+
+        // 쿠키에 저장된 토큰 값 로그로 출력
+        logger.info("Stored token in cookie: " + token);
+        response.sendRedirect("http://localhost:5173");
     }
 
     private Cookie createCookie(String key, String value) {
@@ -51,7 +59,7 @@ public class CustomSuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         cookie.setMaxAge(60*60*60);
         //cookie.setSecure(true);
         cookie.setPath("/");
-        cookie.setHttpOnly(false);
+        cookie.setHttpOnly(true);
 
         return cookie;
     }
