@@ -95,7 +95,6 @@ public class SecurityConfig {
 
 		http.logout(logout -> logout
 			.logoutUrl("/logout")
-			.logoutSuccessUrl(frontendUrl)
 			.invalidateHttpSession(false)  // 세션 무효화 비활성화 (stateless 방식에선 필요 없음)
 			.clearAuthentication(true)  // SecurityContext 초기화
 			.deleteCookies("Authorization"));  // JWT가 저장된 쿠키 삭제
