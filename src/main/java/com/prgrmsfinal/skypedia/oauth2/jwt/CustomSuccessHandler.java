@@ -5,6 +5,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
@@ -16,6 +18,9 @@ import java.util.Iterator;
 
 @Component
 public class CustomSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {   //로그인 성공시 토큰 쿠키에 저장하고 리다이렉팅하는 클래스
+
+    @Value("${frontend.url}")
+    private String frontendUrl;
 
     private final JWTUtil jwtUtil;
 
@@ -41,16 +46,13 @@ public class CustomSuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         response.addCookie(createCookie("Authorization", token));
 
-        // SameSite=None 설정을 직접 응답 헤더로 추가
-        response.setHeader("Set-Cookie", "Authorization=" + token + "; Max-Age=216000; Path=/; HttpOnly; SameSite=None");
-
         // 현재 도메인 로그로 출력
         String domain = request.getServerName();
         logger.info("Current domain: " + domain);
 
         // 쿠키에 저장된 토큰 값 로그로 출력
         logger.info("Stored token in cookie: " + token);
-        response.sendRedirect("http://localhost:5173");
+        response.sendRedirect(frontendUrl);
     }
 
     private Cookie createCookie(String key, String value) {
@@ -64,3 +66,4 @@ public class CustomSuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         return cookie;
     }
 }
+
