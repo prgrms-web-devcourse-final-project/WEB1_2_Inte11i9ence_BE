@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.prgrmsfinal.skypedia.post.dto.PostRequestDTO;
 import com.prgrmsfinal.skypedia.post.dto.PostResponseDTO;
 import com.prgrmsfinal.skypedia.post.service.PostService;
+import com.prgrmsfinal.skypedia.reply.dto.ReplyResponseDTO;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -33,7 +34,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/post")
+@RequestMapping("/api/v1")
 @Tag(name = "게시글 API 컨트롤러", description = "게시글과 관련된 REST API를 제공하는 컨트롤러입니다.")
 public class PostController {
 	private final PostService postService;
@@ -61,10 +62,40 @@ public class PostController {
 		example = "1",
 		schema = @Schema(type = "integer", minimum = "1")
 	)
-	@GetMapping("/{postId}")
+	@GetMapping("/post/{postId}")
 	@ResponseStatus(HttpStatus.OK)
-	public Map<String, PostResponseDTO.Read> read(Authentication authentication, @PathVariable Long postId) {
-		return Map.of("result", postService.read(authentication, postId));
+	public PostResponseDTO.Read read(Authentication authentication, @PathVariable Long postId) {
+		return postService.read(authentication, postId);
+	}
+
+	@Operation(
+		summary = "게시글 댓글 목록 조회",
+		description = "게시글의 댓글 목록을 조회합니다.",
+		responses = {
+			@ApiResponse(
+				responseCode = "200",
+				description = "댓글 목록 조회 성공",
+				content = @Content(mediaType = "application/json")
+			),
+			@ApiResponse(
+				responseCode = "404",
+				description = "게시글이 존재하지 않음",
+				content = @Content(mediaType = "application/json")
+			)
+		}
+	)
+	@Parameter(
+		name = "lastidx",
+		description = "기준이 될 마지막 인덱스",
+		required = false,
+		example = "0",
+		schema = @Schema(type = "integer", defaultValue = "0", minimum = "0")
+	)
+	@GetMapping("/post/{postId}/reply")
+	@ResponseStatus(HttpStatus.OK)
+	public ReplyResponseDTO.ReadAll readReplies(Authentication authentication, @PathVariable Long postId
+		, @RequestParam(name = "lastidx", defaultValue = "0") Long lastId) {
+		return postService.readReplies(authentication, postId, lastId);
 	}
 
 	@Operation(
@@ -116,12 +147,35 @@ public class PostController {
 			schema = @Schema(type = "integer", defaultValue = "0", minimum = "0")
 		)
 	})
-	@GetMapping
+	@GetMapping("/posts")
 	@ResponseStatus(HttpStatus.OK)
-	public Map<String, PostResponseDTO.ReadAll> readAll(@RequestParam("category") String category
+	public PostResponseDTO.ReadAll readAll(@RequestParam("category") String category
 		, @RequestParam("order") String order
-		, @RequestParam(name = "last", defaultValue = "0") Long lastPostId) {
-		return Map.of("result", postService.readAll(category, lastPostId, order));
+		, @RequestParam("cursor") String cursor
+		, @RequestParam(name = "lastidx", defaultValue = "0") Long lastPostId) {
+		return postService.readAll(category, cursor, lastPostId, order);
+	}
+
+	@GetMapping("/posts/{username}")
+	@ResponseStatus(HttpStatus.OK)
+	public PostResponseDTO.ReadAll readAll(@PathVariable("username") String username
+		, @RequestParam(name = "lastidx", defaultValue = "0") Long lastPostId) {
+		return postService.readAll(username, lastPostId);
+	}
+
+	@GetMapping("/posts/scrap")
+	@ResponseStatus(HttpStatus.OK)
+	public PostResponseDTO.ReadAll readAll(Authentication authentication, @RequestParam("lastidx") Long lastId) {
+		return postService.readAll(authentication, lastId);
+	}
+
+	@GetMapping("/posts/search")
+	@ResponseStatus(HttpStatus.OK)
+	public PostResponseDTO.ReadAll search(@RequestParam("keyword") String keyword
+		, @RequestParam("target") String target
+		, @RequestParam("lastrev") String cursor
+		, @RequestParam(name = "lastidx", defaultValue = "0") Long lastPostId) {
+		return postService.search(keyword, target, cursor, lastPostId);
 	}
 
 	@Operation(
@@ -140,7 +194,7 @@ public class PostController {
 			)
 		}
 	)
-	@PostMapping
+	@PostMapping("/post")
 	public ResponseEntity<?> create(Authentication authentication, PostRequestDTO.Create request) {
 		List<String> uploadUrls = postService.create(authentication, request);
 
@@ -149,6 +203,13 @@ public class PostController {
 		}
 
 		return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("uploadUrls", uploadUrls));
+	}
+
+	@PostMapping("/post/{postId}/reply")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void createReply(Authentication authentication, @PathVariable("postId") Long postId,
+		PostRequestDTO.CreateReply request) {
+		postService.createReply(authentication, postId, request);
 	}
 
 	@Operation(
@@ -174,10 +235,10 @@ public class PostController {
 		example = "1",
 		schema = @Schema(type = "integer", minimum = "1")
 	)
-	@PostMapping("/{postId}/likes")
+	@PostMapping("/post/{postId}/likes")
 	@ResponseStatus(HttpStatus.OK)
-	public Map<String, Boolean> toggleLikes(Authentication authentication, @PathVariable Long postId) {
-		return Map.of("liked", postService.toggleLikes(authentication, postId));
+	public PostResponseDTO.ToggleLikes toggleLikes(Authentication authentication, @PathVariable Long postId) {
+		return postService.toggleLikes(authentication, postId);
 	}
 
 	@Operation(
@@ -203,7 +264,7 @@ public class PostController {
 		example = "1",
 		schema = @Schema(type = "integer", minimum = "1")
 	)
-	@PostMapping("/{postId}/scrap")
+	@PostMapping("/post/{postId}/scrap")
 	@ResponseStatus(HttpStatus.OK)
 	public Map<String, Boolean> toggleScrap(Authentication authentication, @PathVariable Long postId) {
 		return Map.of("scraped", postService.toggleScrap(authentication, postId));
@@ -237,7 +298,7 @@ public class PostController {
 		example = "1",
 		schema = @Schema(type = "integer", minimum = "1")
 	)
-	@PutMapping("/{postId}")
+	@PutMapping("/post/{postId}")
 	public ResponseEntity<?> modify(Authentication authentication, @PathVariable Long postId,
 		@RequestBody PostRequestDTO.Modify request) {
 		List<String> uploadUrls = postService.modify(authentication, postId, request);
@@ -277,7 +338,7 @@ public class PostController {
 		example = "1",
 		schema = @Schema(type = "integer", minimum = "1")
 	)
-	@DeleteMapping("/{postId}")
+	@DeleteMapping("/post/{postId}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void delete(Authentication authentication, @PathVariable Long postId) {
 		postService.delete(authentication, postId);
@@ -311,7 +372,7 @@ public class PostController {
 		example = "1",
 		schema = @Schema(type = "integer", minimum = "1")
 	)
-	@PatchMapping("/{postId}/restore")
+	@PatchMapping("/post/{postId}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void restore(Authentication authentication, @PathVariable Long postId) {
 		postService.restore(authentication, postId);

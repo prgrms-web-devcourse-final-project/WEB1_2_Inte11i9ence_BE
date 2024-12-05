@@ -35,7 +35,7 @@ public class PostRequestDTO {
 		private final String category;
 
 		@Schema(title = "게시글 해쉬태그", description = "게시글의 특징을 표현할 해쉬태그입니다.")
-		private final List<String> tags;
+		private final List<String> hashtags;
 
 		@Schema(title = "별점", description = "0.0 ~ 5.0점 사이의 별점입니다.", example = "5.0")
 		@Max(value = 5, message = "별점은 5.0 초과일 수 없습니다.")
@@ -43,7 +43,20 @@ public class PostRequestDTO {
 		private final Float rating;
 
 		@Schema(title = "업로드할 이미지 정보", description = "업로드할 이미지 메타데이터입니다.")
-		private final List<PhotoRequestDTO.Upload> photos;
+		private final List<PhotoRequestDTO.Upload> uploads;
+	}
+
+	@Schema(title = "게시글 댓글 등록 요청 DTO", description = "게시글에 댓글 등록 요청에 사용하는 DTO입니다.")
+	@Getter
+	@AllArgsConstructor
+	public static class CreateReply {
+		@Schema(title = "부모 댓글 ID", description = "대댓글의 경우 필요한 부모 댓글의 ID입니다.", example = "1")
+		@Min(value = 1, message = "ID는 0 이하일 수 없습니다.")
+		private final Long parentId;
+
+		@Schema(title = "댓글 내용", description = "댓글 내용입니다.", example = "댓글 내용")
+		@Length(max = 1000, message = "댓글은 1000자를 초과할 수 없습니다.")
+		private final String content;
 	}
 
 	@Schema(title = "게시글 수정 요청 DTO", description = "게시글의 수정 요청에 사용하는 DTO입니다.")
@@ -59,6 +72,9 @@ public class PostRequestDTO {
 		@Schema(title = "게시글 내용", description = "게시글 내용입니다.", example = "게시글 내용")
 		@Length(max = 2000, message = "내용은 2000자를 초과할 수 없습니다.")
 		private final String content;
+
+		@Schema(title = "해쉬 태그 목록", description = "해쉬 태그 목록입니다.")
+		private final List<String> hashtags;
 
 		@Schema(title = "별점", description = "0.0 ~ 5.0점 사이의 별점입니다.", example = "5.0")
 		@Max(value = 5, message = "별점은 5.0 초과일 수 없습니다.")
