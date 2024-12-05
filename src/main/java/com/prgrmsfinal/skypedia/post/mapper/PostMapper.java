@@ -1,5 +1,6 @@
 package com.prgrmsfinal.skypedia.post.mapper;
 
+import java.util.Arrays;
 import java.util.List;
 
 import com.prgrmsfinal.skypedia.member.dto.MemberResponseDTO;
@@ -8,16 +9,18 @@ import com.prgrmsfinal.skypedia.post.dto.PostResponseDTO;
 import com.prgrmsfinal.skypedia.post.entity.Post;
 import com.prgrmsfinal.skypedia.reply.dto.ReplyResponseDTO;
 
+import io.micrometer.common.util.StringUtils;
+
 public class PostMapper {
-	public static PostResponseDTO.Read getDTO(Post post, MemberResponseDTO.Info memberInfo,
+	public static PostResponseDTO.Read toDTO(Post post, MemberResponseDTO.Info memberInfo,
 		PostResponseDTO.Statistics postStatistics, List<PhotoResponseDTO.Info> photos,
-		List<ReplyResponseDTO.ReadAll> replies, String nextReplyUrl) {
+		ReplyResponseDTO.ReadAll replies) {
 		return PostResponseDTO.Read.builder()
 			.id(post.getId())
 			.title(post.getTitle())
 			.content(post.getContent())
 			.rating(post.getRating())
-			.postedAt(post.getUpdatedAt())
+			.postedAt(post.getCreatedAt())
 			.category(post.getCategory().getName())
 			.author(memberInfo)
 			.views(postStatistics.getViews())
@@ -25,28 +28,43 @@ public class PostMapper {
 			.liked(postStatistics.isLiked())
 			.scraped(postStatistics.isScraped())
 			.photos(photos)
-			.replies(replies)
-			.nextReplyUrl(nextReplyUrl)
+			.reply(replies)
+			.hashtags(Arrays.stream(post.getHashtags().split(","))
+				.filter(StringUtils::isNotBlank).toList())
 			.build();
 	}
 
-	public static PostResponseDTO.Info getDTO(Post post, MemberResponseDTO.Info memberInfo
-		, PostResponseDTO.Statistics postStatistics, Long replies, String photoUrl) {
+	public static PostResponseDTO.Info toDTO(Post post, MemberResponseDTO.Info memberInfo
+		, Long views, Long likes, Long replies, String photoUrl) {
 		return PostResponseDTO.Info.builder()
 			.id(post.getId())
+			.author(memberInfo)
 			.title(post.getTitle())
 			.content(post.getContent())
-			.views(postStatistics.getViews())
-			.likes(postStatistics.getLikes())
+			.views(views)
+			.likes(likes)
 			.replies(replies)
 			.category(post.getCategory().getName())
 			.rating(post.getRating())
-			.postedAt(post.getUpdatedAt())
+			.postedAt(post.getCreatedAt())
 			.photoUrl(photoUrl)
 			.build();
 	}
 
-	public static PostResponseDTO.ReadAll getDTO(List<PostResponseDTO.Info> posts, String nextPostUrl) {
-		return new PostResponseDTO.ReadAll(posts, nextPostUrl);
+	public static PostResponseDTO.Info toDTO(PostResponseDTO.Search post, MemberResponseDTO.Info memberInfo
+		, Long views, Long likes, Long replies, String photoUrl) {
+		return PostResponseDTO.Info.builder()
+			.id(post.getId())
+			.author(memberInfo)
+			.title(post.getTitle())
+			.content(post.getContent())
+			.views(views)
+			.likes(likes)
+			.replies(replies)
+			.category(post.getCategory().getName())
+			.rating(post.getRating())
+			.postedAt(post.getCreatedAt())
+			.photoUrl(photoUrl)
+			.build();
 	}
 }

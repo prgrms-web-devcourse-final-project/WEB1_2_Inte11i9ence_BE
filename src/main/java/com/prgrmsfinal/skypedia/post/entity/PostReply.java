@@ -4,8 +4,8 @@ import java.time.LocalDateTime;
 
 import org.springframework.data.annotation.CreatedDate;
 
-import com.prgrmsfinal.skypedia.member.entity.Member;
-import com.prgrmsfinal.skypedia.post.entity.key.PostScrapId;
+import com.prgrmsfinal.skypedia.post.entity.key.PostReplyId;
+import com.prgrmsfinal.skypedia.reply.entity.Reply;
 
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
@@ -21,18 +21,18 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-public class PostScrap {
+public class PostReply {
 	@EmbeddedId
-	private PostScrapId id;
+	private PostReplyId id;
 
 	@ManyToOne
 	@MapsId("postId")
 	private Post post;
 
 	@ManyToOne
-	@MapsId("memberId")
-	private Member member;
+	@MapsId("replyId")
+	private Reply reply;
 
 	@CreatedDate
-	private LocalDateTime scrapedAt;
+	private LocalDateTime repliedAt;
 }
