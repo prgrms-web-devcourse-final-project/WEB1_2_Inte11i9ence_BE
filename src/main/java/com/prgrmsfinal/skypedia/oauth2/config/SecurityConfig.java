@@ -51,10 +51,11 @@ public class SecurityConfig {
 					configuration.setAllowedOrigins(Collections.singletonList(frontendUrl));
 					configuration.setAllowedMethods(Collections.singletonList("*"));
 					configuration.setAllowCredentials(true);
-					configuration.setAllowedHeaders(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+					configuration.setAllowedHeaders(Collections.singletonList("*"));
 					configuration.setMaxAge(3600L);
 
-					configuration.setExposedHeaders(List.of("Authorization", "Set-Cookie")); // 필요한 헤더 추가
+					configuration.setExposedHeaders(Collections.singletonList("Set-Cookie"));
+					configuration.setExposedHeaders(Collections.singletonList("Authorization"));
 
 
 					return configuration;
