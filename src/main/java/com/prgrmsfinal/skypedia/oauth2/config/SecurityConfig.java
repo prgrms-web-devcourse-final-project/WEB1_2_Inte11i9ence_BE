@@ -1,8 +1,8 @@
 package com.prgrmsfinal.skypedia.oauth2.config;
 
-import java.util.Arrays;
+
 import java.util.Collections;
-import java.util.List;
+
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -54,7 +54,8 @@ public class SecurityConfig {
 					configuration.setAllowedHeaders(Collections.singletonList("*"));
 					configuration.setMaxAge(3600L);
 
-					configuration.setExposedHeaders(Arrays.asList("Set-Cookie", "Authorization"));
+					configuration.setExposedHeaders(Collections.singletonList("Set-Cookie"));
+					configuration.setExposedHeaders(Collections.singletonList("Authorization"));
 
 
 					return configuration;
