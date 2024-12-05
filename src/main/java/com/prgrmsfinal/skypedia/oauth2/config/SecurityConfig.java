@@ -22,7 +22,6 @@ import com.prgrmsfinal.skypedia.oauth2.service.CustomOAuth2UserService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -34,6 +33,7 @@ public class SecurityConfig {
 
 	@Value("${frontend.url}")
 	private String frontendUrl;
+
 	@Value("${backend.url}")
 	private String backendUrl;
 
@@ -41,67 +41,43 @@ public class SecurityConfig {
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
 		http
-			.cors(corsCustomizer -> corsCustomizer.configurationSource(new CorsConfigurationSource() {
+				.cors(corsCustomizer -> corsCustomizer.configurationSource(new CorsConfigurationSource() {
+					@Override
+					public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
+						CorsConfiguration configuration = new CorsConfiguration();
+						configuration.setAllowedOrigins(Collections.singletonList(frontendUrl));
+						configuration.setAllowedMethods(Collections.singletonList("*"));
+						configuration.setAllowCredentials(true);
+						configuration.setAllowedHeaders(Collections.singletonList("*"));
+						configuration.setMaxAge(3600L);
 
-				@Override
-				public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
+						// Set-Cookie를 제거하고 Authorization을 추가
+						configuration.setExposedHeaders(Collections.singletonList("Authorization"));
 
-					CorsConfiguration configuration = new CorsConfiguration();
-
-					configuration.setAllowedOrigins(Collections.singletonList(frontendUrl));
-					configuration.setAllowedMethods(Collections.singletonList("*"));
-					configuration.setAllowCredentials(true);
-					configuration.setAllowedHeaders(Collections.singletonList("*"));
-					configuration.setMaxAge(3600L);
-
-					configuration.setExposedHeaders(Collections.singletonList("Set-Cookie"));
-					configuration.setExposedHeaders(Collections.singletonList("Authorization"));
-
-
-					return configuration;
-				}
-			}));
-		//csrf disable
-		http
-			.csrf((auth) -> auth.disable());
-
-		//From 로그인 방식 disable
-		http
-			.formLogin((auth) -> auth.disable());
-
-		//HTTP Basic 인증 방식 disable
-		http
-			.httpBasic((auth) -> auth.disable());
-
-		http
-			.addFilterBefore(new JWTFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
-
-		//oauth2
-		http
-			.oauth2Login((oauth2) -> oauth2
-				.userInfoEndpoint((userInfoEndpointConfig -> userInfoEndpointConfig
-					.userService(customOAuth2UserService)))
-				.successHandler(customSuccessHandler));
-
-		//경로별 인가 작업
-		http
-			.authorizeHttpRequests((auth) -> auth
-				.requestMatchers("/", "/login","/logout", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**",
-					"/webjars/**", "/actuator/**","/oauth2/authorization/**")
-				.permitAll()
-				.anyRequest()
-				.authenticated());
-
-		//세션 설정 : STATELESS
-		http
-			.sessionManagement((session) -> session
-				.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-
-		http.logout(logout -> logout
-			.logoutUrl("/logout")
-			.invalidateHttpSession(false)  // 세션 무효화 비활성화 (stateless 방식에선 필요 없음)
-			.clearAuthentication(true)  // SecurityContext 초기화
-			.deleteCookies("Authorization"));  // JWT가 저장된 쿠키 삭제
+						return configuration;
+					}
+				}))
+				.csrf((auth) -> auth.disable()) //csrf disable
+				.formLogin((auth) -> auth.disable()) //From 로그인 방식 disable
+				.httpBasic((auth) -> auth.disable()) //HTTP Basic 인증 방식 disable
+				.addFilterBefore(new JWTFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class) //JWT 필터 추가
+				.oauth2Login((oauth2) -> oauth2
+						.userInfoEndpoint((userInfoEndpointConfig -> userInfoEndpointConfig
+								.userService(customOAuth2UserService)))
+						.successHandler(customSuccessHandler)) //OAuth2 로그인 설정
+				.authorizeHttpRequests((auth) -> auth
+						.requestMatchers("/", "/login", "/logout", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**",
+								"/webjars/**", "/actuator/**", "/oauth2/authorization/**")
+						.permitAll()
+						.anyRequest()
+						.authenticated()) // 경로별 인가 설정
+				.sessionManagement((session) -> session
+						.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Stateless로 설정
+				.logout(logout -> logout
+						.logoutUrl("/logout")
+						.invalidateHttpSession(false) // 세션 무효화 비활성화
+						.clearAuthentication(true) // SecurityContext 초기화
+						.deleteCookies("Authorization")); // JWT 쿠키 삭제
 
 		return http.build();
 	}
