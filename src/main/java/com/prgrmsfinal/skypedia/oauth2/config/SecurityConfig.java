@@ -2,6 +2,7 @@ package com.prgrmsfinal.skypedia.oauth2.config;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -50,11 +51,11 @@ public class SecurityConfig {
 					configuration.setAllowedOrigins(Collections.singletonList(frontendUrl));
 					configuration.setAllowedMethods(Collections.singletonList("*"));
 					configuration.setAllowCredentials(true);
-					configuration.setAllowedHeaders(Collections.singletonList("*"));
+					configuration.setAllowedHeaders(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 					configuration.setMaxAge(3600L);
 
-					configuration.setExposedHeaders(Collections.singletonList("Set-Cookie"));
-					configuration.setExposedHeaders(Collections.singletonList("Authorization"));
+					configuration.setExposedHeaders(List.of("Authorization", "Set-Cookie")); // 필요한 헤더 추가
+
 
 					return configuration;
 				}
@@ -84,7 +85,7 @@ public class SecurityConfig {
 		//경로별 인가 작업
 		http
 			.authorizeHttpRequests((auth) -> auth
-				.requestMatchers("/", "/login", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**",
+				.requestMatchers("/", "/login","/logout", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**",
 					"/webjars/**", "/actuator/**","/oauth2/authorization/**")
 				.permitAll()
 				.anyRequest()
