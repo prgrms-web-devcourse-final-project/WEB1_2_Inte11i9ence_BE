@@ -5,7 +5,8 @@ import java.time.LocalDateTime;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
-import jakarta.persistence.Column;
+import com.prgrmsfinal.skypedia.member.entity.Member;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -15,11 +16,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Data
 @Entity
 @Builder
 @NoArgsConstructor
@@ -29,17 +28,17 @@ public class Reply {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;            // 댓글 ID
+	private Long id;
 
-	@Column(length = 500, nullable = false)
-	private String content;     // 댓글 내용
+	@ManyToOne
+	@JoinColumn(name = "member_id")
+	private Member member;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "parent_reply_id")
-	private Reply parentReply;  // 대댓글용 자기 참조
+	private Reply parentReply;
 
-	// @OneToMany(mappedBy = "parentReply", fetch = FetchType.LAZY)
-	// private List<Reply> childrenReply = new ArrayList<>();
+	private String content;
 
 	@Builder.Default
 	private Long likes = 0L;
@@ -54,4 +53,18 @@ public class Reply {
 	private LocalDateTime updatedAt;
 
 	private LocalDateTime deletedAt;
+
+	public void changeContent(String content) {
+		this.content = content;
+	}
+
+	public void delete() {
+		deleted = true;
+		deletedAt = LocalDateTime.now();
+	}
+
+	public void restore() {
+		deleted = false;
+		deletedAt = null;
+	}
 }

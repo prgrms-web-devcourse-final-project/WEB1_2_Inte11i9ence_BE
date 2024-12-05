@@ -1,6 +1,7 @@
 package com.prgrmsfinal.skypedia.post.entity;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.prgrmsfinal.skypedia.global.entity.BaseTime;
 import com.prgrmsfinal.skypedia.member.entity.Member;
@@ -38,6 +39,8 @@ public class Post extends BaseTime {
 
 	private String content;
 
+	private String hashtags;
+
 	@Builder.Default
 	private Long views = 0L;
 
@@ -51,10 +54,10 @@ public class Post extends BaseTime {
 
 	private LocalDateTime deletedAt;
 
-	public void modify(String title, String content) {
+	public void modify(String title, String content, List<String> hashtags) {
 		this.title = title;
-
 		this.content = content;
+		this.hashtags = String.join(",", hashtags);
 	}
 
 	public void delete() {
