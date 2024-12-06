@@ -52,5 +52,6 @@ public class CustomSuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String jsonResponse = objectMapper.writeValueAsString(tokenResponse);
 
         response.getWriter().write(jsonResponse);
+
     }
 }
