@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -15,6 +16,8 @@ import com.prgrmsfinal.skypedia.member.dto.MemberResponseDTO;
 import com.prgrmsfinal.skypedia.member.entity.Member;
 import com.prgrmsfinal.skypedia.member.mapper.MemberMapper;
 import com.prgrmsfinal.skypedia.member.service.MemberService;
+import com.prgrmsfinal.skypedia.notify.constant.NotifyType;
+import com.prgrmsfinal.skypedia.notify.dto.NotifyRequestDTO;
 import com.prgrmsfinal.skypedia.post.dto.PostRequestDTO;
 import com.prgrmsfinal.skypedia.post.dto.PostResponseDTO;
 import com.prgrmsfinal.skypedia.post.entity.Post;
@@ -50,6 +53,8 @@ public class PostServiceImpl implements PostService {
 	private final MemberService memberService;
 
 	private final ReplyService replyService;
+
+	private final ApplicationEventPublisher eventPublisher;
 
 	@Value("${post.views.prefix.key}")
 	private String POST_VIEWS_PREFIX_KEY;
@@ -249,7 +254,7 @@ public class PostServiceImpl implements PostService {
 
 		Member member = memberService.getAuthenticatedMember(authentication);
 
-		postRepository.save(Post.builder()
+		Post post = postRepository.save(Post.builder()
 			.title(request.getTitle())
 			.content(request.getContent())
 			.category(category)
@@ -258,6 +263,14 @@ public class PostServiceImpl implements PostService {
 			.member(member)
 			.build());
 
+		if (category.getName().equals("공지")) {
+			eventPublisher.publishEvent(NotifyRequestDTO.Global.builder()
+				.notifyType(NotifyType.NOTICE)
+				.content("새로운 공지가 등록되었습니다.")
+				.uri("/api/v1/post/" + post.getId())
+				.build());
+		}
+		
 		// 사진 연동 작업이 필요함!!!
 		return null;
 	}

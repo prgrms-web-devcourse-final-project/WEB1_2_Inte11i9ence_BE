@@ -2,11 +2,14 @@ package com.prgrmsfinal.skypedia.post.service;
 
 import java.util.List;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
+import com.prgrmsfinal.skypedia.notify.constant.NotifyType;
+import com.prgrmsfinal.skypedia.notify.dto.NotifyRequestDTO;
 import com.prgrmsfinal.skypedia.post.entity.Post;
 import com.prgrmsfinal.skypedia.post.entity.PostReply;
 import com.prgrmsfinal.skypedia.post.exception.PostError;
@@ -24,6 +27,8 @@ public class PostReplyServiceImpl implements PostReplyService {
 	private final PostReplyRepository postReplyRepository;
 
 	private final ReplyService replyService;
+
+	private final ApplicationEventPublisher eventPublisher;
 
 	@Override
 	public ReplyResponseDTO.ReadAll readAll(Authentication authentication, Long postId, Long lastReplyId) {
@@ -56,6 +61,24 @@ public class PostReplyServiceImpl implements PostReplyService {
 			.post(post)
 			.reply(reply)
 			.build());
+
+		Reply parentReply = reply.getParentReply();
+
+		if (parentReply != null && parentReply.getMember().getId() != reply.getMember().getId()) {
+			eventPublisher.publishEvent(NotifyRequestDTO.User.builder()
+				.member(parentReply.getMember())
+				.notifyType(NotifyType.REPLY)
+				.content(reply.getMember().getName() + "님이 당신의 댓글에 대댓글을 달았습니다.")
+				.uri("/api/v1/post/" + post.getId())
+				.build());
+		} else {
+			eventPublisher.publishEvent(NotifyRequestDTO.User.builder()
+				.member(post.getMember())
+				.notifyType(NotifyType.REPLY)
+				.content(reply.getMember().getName() + "님이 당신의 글에 댓글을 달았습니다.")
+				.uri("/api/v1/post/" + post.getId())
+				.build());
+		}
 	}
 
 	@Override
