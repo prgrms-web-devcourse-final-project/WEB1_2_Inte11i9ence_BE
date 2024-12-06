@@ -1,4 +1,4 @@
-package com.prgrmsfinal.skypedia.post.mapper;
+package com.prgrmsfinal.skypedia.post.util;
 
 import java.util.Arrays;
 import java.util.List;

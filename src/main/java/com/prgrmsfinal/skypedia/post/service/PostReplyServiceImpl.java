@@ -16,8 +16,8 @@ import com.prgrmsfinal.skypedia.post.exception.PostError;
 import com.prgrmsfinal.skypedia.post.repository.PostReplyRepository;
 import com.prgrmsfinal.skypedia.reply.dto.ReplyResponseDTO;
 import com.prgrmsfinal.skypedia.reply.entity.Reply;
-import com.prgrmsfinal.skypedia.reply.mapper.ReplyMapper;
 import com.prgrmsfinal.skypedia.reply.service.ReplyService;
+import com.prgrmsfinal.skypedia.reply.util.ReplyMapper;
 
 import lombok.RequiredArgsConstructor;
 

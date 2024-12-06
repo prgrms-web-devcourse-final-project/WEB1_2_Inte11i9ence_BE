@@ -23,10 +23,10 @@ import com.prgrmsfinal.skypedia.post.dto.PostResponseDTO;
 import com.prgrmsfinal.skypedia.post.entity.Post;
 import com.prgrmsfinal.skypedia.post.entity.PostCategory;
 import com.prgrmsfinal.skypedia.post.exception.PostError;
-import com.prgrmsfinal.skypedia.post.mapper.PostMapper;
 import com.prgrmsfinal.skypedia.post.repository.PostLikesRepository;
 import com.prgrmsfinal.skypedia.post.repository.PostRepository;
 import com.prgrmsfinal.skypedia.post.repository.PostScrapRepository;
+import com.prgrmsfinal.skypedia.post.util.PostMapper;
 import com.prgrmsfinal.skypedia.reply.dto.ReplyResponseDTO;
 import com.prgrmsfinal.skypedia.reply.entity.Reply;
 import com.prgrmsfinal.skypedia.reply.service.ReplyService;
@@ -270,7 +270,7 @@ public class PostServiceImpl implements PostService {
 				.uri("/api/v1/post/" + post.getId())
 				.build());
 		}
-		
+
 		// 사진 연동 작업이 필요함!!!
 		return null;
 	}

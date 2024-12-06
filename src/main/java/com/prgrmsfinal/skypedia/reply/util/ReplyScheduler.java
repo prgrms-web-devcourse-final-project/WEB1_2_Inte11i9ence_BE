@@ -1,4 +1,4 @@
-package com.prgrmsfinal.skypedia.reply.scheduler;
+package com.prgrmsfinal.skypedia.reply.util;
 
 import java.util.ArrayList;
 import java.util.List;
