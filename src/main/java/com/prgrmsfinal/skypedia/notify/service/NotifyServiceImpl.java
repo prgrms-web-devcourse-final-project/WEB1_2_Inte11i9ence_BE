@@ -170,7 +170,7 @@ public class NotifyServiceImpl implements NotifyService {
 		List<Notify> notifies = notifyRepository.findByMemberIdAndRead(member.getId(), false);
 
 		if (notifies.isEmpty()) {
-			throw NotifyError.NOT_FOUND_NOTIFY_CHECK.getException();
+			throw NotifyError.NOT_FOUND_NOTIFY_CHECKS.getException();
 		}
 
 		notifies.forEach(Notify::check);
