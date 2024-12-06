@@ -17,6 +17,20 @@ CREATE TABLE IF NOT EXISTS member
     CHECK (role IN ('ROLE_USER', 'ROLE_ADMIN'))
 );
 
+CREATE TABLE IF NOT EXISTS notify
+(
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    member_id   BIGINT       NULL,
+    content     VARCHAR(255) NOT NULL,
+    notify_type VARCHAR(20)  NOT NULL,
+    uri         VARCHAR(255) NOT NULL,
+    sent_at     TIMESTAMP    NOT NULL,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CHECK (notify_type IN ('REPLY', 'CHAT', 'NOTICE')),
+    FOREIGN KEY (member_id) REFERENCES member (id)
+);
+
 CREATE TABLE IF NOT EXISTS photo
 (
     id                BIGINT AUTO_INCREMENT PRIMARY KEY,

@@ -1,4 +1,4 @@
-package com.prgrmsfinal.skypedia.post.scheduler;
+package com.prgrmsfinal.skypedia.post.util;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -109,7 +109,7 @@ public class PostScheduler {
 						log.warn("DB Sync error: {}", e.getMessage());
 					}
 				});
-				
+
 				redisTemplate.delete(POST_SCRAP_PREFIX_KEY + postId);
 				postScrapRepository.saveAll(postScraps);
 			});
