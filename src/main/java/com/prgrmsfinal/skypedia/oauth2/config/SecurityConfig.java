@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.prgrmsfinal.skypedia.oauth2.dto.TokenResponse;
 import com.prgrmsfinal.skypedia.oauth2.jwt.JwtAuthenticationFilter;
 import com.prgrmsfinal.skypedia.oauth2.jwt.JwtTokenProvider;
+import com.prgrmsfinal.skypedia.oauth2.service.GoogleOAuth2Service;
 import com.prgrmsfinal.skypedia.oauth2.service.NaverOAuth2Service;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 public class SecurityConfig {
 	private final NaverOAuth2Service naverOAuth2Service;
+	private final GoogleOAuth2Service googleOAuth2Service;
 	private final JwtTokenProvider jwtTokenProvider;
 
 	@Bean
@@ -59,8 +61,20 @@ public class SecurityConfig {
 				.oauth2Login(oauth2 -> oauth2
 						.successHandler((request, response, authentication) -> {
 							OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
-							TokenResponse tokenResponse = naverOAuth2Service
-									.authenticateNaverUser(oauth2User.getAttributes());
+//							TokenResponse tokenResponse = naverOAuth2Service
+//									.authenticateNaverUser(oauth2User.getAttributes());
+							TokenResponse tokenResponse;
+
+							String registrationId = request.getRequestURI()
+									.contains("google") ? "google" : "naver";
+
+							if ("google".equals(registrationId)) {
+								tokenResponse = googleOAuth2Service
+										.authenticateGoogleUser(oauth2User.getAttributes());
+							} else {
+								tokenResponse = naverOAuth2Service
+										.authenticateNaverUser(oauth2User.getAttributes());
+							}
 							String redirectUrl = String.format("http://localhost:5173/oauth/callback?token=%s&refreshToken=%s",
 									tokenResponse.getAccessToken(),
 									tokenResponse.getRefreshToken());
