@@ -7,12 +7,12 @@ RUN apt-get update && apt-get install -y \
     openjdk-17-jdk \
     unzip \
     locales && \  # 로케일 패키지 추가
-    locale-gen ko_KR.UTF-8 && \  # UTF-8 로케일 생성
-    update-locale LANG=ko_KR.UTF-8 && \  # 로케일 적용
-    wget https://services.gradle.org/distributions/gradle-8.4-bin.zip -P /tmp && \
-    unzip /tmp/gradle-8.4-bin.zip -d /opt && \
-    ln -s /opt/gradle-8.4/bin/gradle /usr/bin/gradle && \
     apt-get clean
+
+# 로케일 설정
+RUN echo "ko_KR.UTF-8 UTF-8" > /etc/locale.gen && \
+    locale-gen && \
+    update-locale LANG=ko_KR.UTF-8
 
 # 로케일 환경 변수 설정
 ENV LANG=ko_KR.UTF-8 \
@@ -24,7 +24,10 @@ WORKDIR /app
 
 # 4. Gradle 설정 파일 복사 및 의존성 다운로드
 COPY build.gradle settings.gradle /app/
-RUN gradle dependencies --no-daemon
+RUN wget https://services.gradle.org/distributions/gradle-8.4-bin.zip -P /tmp && \
+    unzip /tmp/gradle-8.4-bin.zip -d /opt && \
+    ln -s /opt/gradle-8.4/bin/gradle /usr/bin/gradle && \
+    gradle dependencies --no-daemon
 
 # 5. 프로젝트 소스 복사 및 빌드
 COPY . /app/
@@ -36,10 +39,13 @@ FROM ubuntu:24.04
 # 7. 필요한 패키지 설치 (JDK)
 RUN apt-get update && apt-get install -y \
     openjdk-17-jdk \
-    locales && \  # 로케일 패키지 추가
-    locale-gen ko_KR.UTF-8 && \  # UTF-8 로케일 생성
-    update-locale LANG=ko_KR.UTF-8 && \
+    locales && \
     apt-get clean
+
+# 로케일 설정
+RUN echo "ko_KR.UTF-8 UTF-8" > /etc/locale.gen && \
+    locale-gen && \
+    update-locale LANG=ko_KR.UTF-8
 
 # 로케일 환경 변수 설정
 ENV LANG=ko_KR.UTF-8 \
