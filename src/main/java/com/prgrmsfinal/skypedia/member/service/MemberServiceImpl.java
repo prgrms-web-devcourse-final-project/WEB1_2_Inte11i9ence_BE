@@ -61,6 +61,29 @@ public class MemberServiceImpl implements MemberService{
 
         throw new AuthenticationCredentialsNotFoundException("Unsupported authentication type");
     }
+//    public Member getAuthenticatedMember(Authentication authentication) {
+//        if (authentication == null) {
+//            throw new AuthenticationCredentialsNotFoundException("Authentication is required");
+//        }
+//
+//        String email;
+//        if (authentication.getPrincipal() instanceof UserDetails) {
+//            email = ((UserDetails) authentication.getPrincipal()).getUsername();
+//        } else if (authentication.getPrincipal() instanceof OAuth2User) {
+//            Map<String, Object> attributes = ((OAuth2User) authentication.getPrincipal()).getAttributes();
+//            // Naver의 경우 response 내부에 실제 사용자 정보가 있음
+//            Map<String, Object> response = (Map<String, Object>) attributes.get("response");
+//            email = (String) response.get("email");
+//        } else {
+//            throw new AuthenticationCredentialsNotFoundException("Unsupported authentication type");
+//        }
+//
+//        Member member = memberRepository.findByEmail(email);
+//        if (member == null) {
+//            throw new UsernameNotFoundException("Member not found with email: " + email);
+//        }
+//        return member;
+//    }
 
     //회원 수정
     @Transactional
