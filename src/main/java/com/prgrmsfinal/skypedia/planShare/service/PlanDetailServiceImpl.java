@@ -1,12 +1,15 @@
 package com.prgrmsfinal.skypedia.planShare.service;
 
+import java.util.Comparator;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
-import com.prgrmsfinal.skypedia.planShare.dto.PlanDetailDTO;
+import com.prgrmsfinal.skypedia.planShare.dto.PlanDetailRequestDTO;
+import com.prgrmsfinal.skypedia.planShare.dto.PlanDetailResponseDTO;
 import com.prgrmsfinal.skypedia.planShare.entity.PlanDetail;
 import com.prgrmsfinal.skypedia.planShare.exception.PlanError;
 import com.prgrmsfinal.skypedia.planShare.repository.PlanDetailRepository;
@@ -20,85 +23,82 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class PlanDetailServiceImpl implements PlanDetailService {
 	private final PlanDetailRepository planDetailRepository;
+	private final GoogleMapService googleMapService;
+
+	private final LinkedList<PlanDetail> planDetails = new LinkedList<>();
+	private Long idCounter = 1L;
 
 	@Override
-	public List<PlanDetailDTO> readAll(PlanDetailDTO planDetailDTO) {
-		List<PlanDetail> planDetails = planDetailRepository.findAll();
-		return planDetails.stream().map(this::entityToDto).collect(Collectors.toList());
-	}
+	public List<PlanDetailResponseDTO.ReadAll> readAll(PlanDetailResponseDTO.ReadAll DetailReadAll) {
+		LinkedList<PlanDetail> sortedPlanDetails = planDetails.stream()
+			.sorted(Comparator.comparing(PlanDetail::getPlanDate)
+				.thenComparing(PlanDetail::getUpdatedAt))
+			.collect(Collectors.toCollection(LinkedList::new));
 
-	@Override
-	public PlanDetailDTO read(Long id) {
-		Optional<PlanDetail> planDetail = planDetailRepository.findById(id);
-		return planDetail.map(this::entityToDto).orElseThrow(PlanError.NOT_FOUND::get);
+		return sortedPlanDetails.stream()
+			.map(planDetail -> PlanDetailResponseDTO.ReadAll.builder()
+				.id(planDetail.getId())
+				.location(planDetail.getLocation())
+				.content(planDetail.getContent())
+				.planDate(planDetail.getPlanDate())
+				.updatedAt(planDetail.getUpdatedAt())
+				.build())
+			.toList();
 	}
 
 	@Override
 	@Transactional
-	public PlanDetailDTO register(PlanDetailDTO planDetailDTO) {
-		try {
-			PlanDetail planDetail = dtoToEntity(planDetailDTO);
-			planDetail = planDetailRepository.save(planDetail);
-			return entityToDto(planDetail);
-		} catch (Exception e) {
-			log.error(e.getMessage());
-			throw PlanError.NOT_REGISTERED.get();
-		}
+	public PlanDetailRequestDTO.Create register(PlanDetailRequestDTO.Create planDetailDTO) {
+		Map<String, Double> coordinates = googleMapService.getCoordinates(planDetailDTO.getLocation());
+		String placePhotoUrl = googleMapService.getPlacePhoto(planDetailDTO.getPlaceId());
+
+		PlanDetail planDetail = PlanDetail.builder()
+			.location(planDetailDTO.getLocation())
+			.placeId(planDetailDTO.getPlaceId())
+			.content(planDetailDTO.getContent())
+			.locationImage(placePhotoUrl)
+			.planDate(planDetailDTO.getPlanDate())
+			.build();
+
+		planDetail.updateCoordinates(coordinates.get("latitude"), coordinates.get("longitude"));
+
+		planDetails.add(planDetail);
+
+		return planDetailDTO;
 	}
 
 	@Override
-	public PlanDetailDTO update(PlanDetailDTO planDetailDTO) {
-		PlanDetail planDetail = planDetailRepository.findById(planDetailDTO.getId())
-			.orElseThrow(PlanError.NOT_FOUND::get);
+	public PlanDetailRequestDTO.Update update(Long id, PlanDetailRequestDTO.Update planDetailDTO) {
+		PlanDetail planDetail = planDetails.stream()
+			.filter(detail -> detail.getId().equals(planDetailDTO.getId()))
+			.findFirst()
+			.orElseThrow(PlanError.NOT_FOUND::getException);
 
-		planDetail.setContent(planDetailDTO.getContent());
-		planDetail.setPlanDate(planDetailDTO.getPlanDate());
-		planDetail.setLatitude(planDetailDTO.getLatitude());
-		planDetail.setLongitude(planDetailDTO.getLongitude());
-		planDetail.setLocation(planDetailDTO.getLocation());
-		planDetail.setLocationImage(planDetailDTO.getLocationImage());
+		planDetail.updateDetails(
+			planDetailDTO.getContent(),
+			planDetailDTO.getPlanDate(),
+			planDetailDTO.getLatitude(),
+			planDetailDTO.getLongitude(),
+			planDetailDTO.getLocation(),
+			planDetailDTO.getLocationImage()
+		);
 
-		planDetailRepository.save(planDetail);
-
-		return entityToDto(planDetail);
-	}
-
-	@Override
-	public void delete(Long id) {
-		PlanDetail planDetail = planDetailRepository.findById(id).orElseThrow(PlanError.NOT_FOUND::get);
-		planDetailRepository.delete(planDetail);
-	}
-
-	private PlanDetailDTO entityToDto(PlanDetail planDetail) {
-		return PlanDetailDTO.builder()
-			.id(planDetail.getId())
-			.planGroupId(planDetail.getPlanGroup().getId())
+		return PlanDetailRequestDTO.Update.builder()
 			.location(planDetail.getLocation())
+			.regionName(planDetailDTO.getRegionName())
 			.content(planDetail.getContent())
 			.latitude(planDetail.getLatitude())
 			.longitude(planDetail.getLongitude())
 			.locationImage(planDetail.getLocationImage())
 			.planDate(planDetail.getPlanDate())
-			.deleted(planDetail.getDeleted())
-			.createdAt(planDetail.getCreatedAt())
-			.updatedAt(planDetail.getUpdatedAt())
-			.deletedAt(planDetail.getDeletedAt())
 			.build();
 	}
 
-	private PlanDetail dtoToEntity(PlanDetailDTO planDetailDTO) {
-		return PlanDetail.builder()
-			.id(planDetailDTO.getId())
-			.location(planDetailDTO.getLocation())
-			.content(planDetailDTO.getContent())
-			.latitude(planDetailDTO.getLatitude())
-			.longitude(planDetailDTO.getLongitude())
-			.locationImage(planDetailDTO.getLocationImage())
-			.planDate(planDetailDTO.getPlanDate())
-			.deleted(planDetailDTO.getDeleted())
-			.createdAt(planDetailDTO.getCreatedAt())
-			.updatedAt(planDetailDTO.getUpdatedAt())
-			.deletedAt(planDetailDTO.getDeletedAt())
-			.build();
+	@Override
+	public void delete(Long id) {
+		boolean remove = planDetails.removeIf(detail -> detail.getId().equals(id));
+		if (!remove) {
+			throw PlanError.NOT_FOUND.getException();
+		}
 	}
 }

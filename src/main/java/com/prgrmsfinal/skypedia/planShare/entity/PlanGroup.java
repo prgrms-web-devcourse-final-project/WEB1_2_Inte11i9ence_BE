@@ -7,6 +7,7 @@ import java.util.List;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
+import com.prgrmsfinal.skypedia.global.entity.BaseTime;
 import com.prgrmsfinal.skypedia.member.entity.Member;
 
 import jakarta.persistence.CascadeType;
@@ -22,18 +23,16 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Data
 @Entity
 @Getter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "plan_group")
-public class PlanGroup {
+public class PlanGroup extends BaseTime {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -49,9 +48,6 @@ public class PlanGroup {
 
 	@OneToMany(mappedBy = "planGroup", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	private List<PlanDetail> planDetails = new LinkedList<>();  // 세부 일정
-
-	@OneToMany(mappedBy = "planGroup", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-	private List<PlanGroupReply> planGroupReplies;  // 일정 공유 게시글의 댓글
 
 	@Column(length = 20, nullable = false, columnDefinition = "TEXT")
 	private String title;               // 일정 제목
@@ -75,4 +71,9 @@ public class PlanGroup {
 	private LocalDateTime updatedAt;    // 게시물 수정 일자
 
 	private LocalDateTime deletedAt;    // 게시물 삭제 일자
+
+	public void modify(String title, String groupImage) {
+		this.title = title;
+		this.groupImage = groupImage;
+	}
 }
