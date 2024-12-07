@@ -6,6 +6,8 @@ import java.time.LocalDateTime;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
+import com.prgrmsfinal.skypedia.global.entity.BaseTime;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -16,16 +18,12 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Data
 @Entity
 @Getter
 @Builder
@@ -37,7 +35,7 @@ import lombok.NoArgsConstructor;
 		@Index(name = "idx_plan_detail_location", columnList = "latitude, longitude")
 	}
 )
-public class PlanDetail {
+public class PlanDetail extends BaseTime {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -57,6 +55,9 @@ public class PlanDetail {
 
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String location;            // 장소명
+
+	@Column(nullable = false)
+	private String placeId;
 
 	@Column(columnDefinition = "TEXT")
 	private String content;             // 장소 설명
@@ -84,14 +85,24 @@ public class PlanDetail {
 
 	private LocalDateTime deletedAt;    // 세부 일정 삭제 일자
 
-	@PrePersist
-	@PreUpdate
-	private void validateCoordinates() {
+	public void updateCoordinates(Double latitude, Double longitude) {
 		if (latitude < -90 || latitude > 90) {
 			throw new IllegalArgumentException("위도 값은 -90 ~ 90 사이여야 합니다.");
 		}
 		if (longitude < -180 || longitude > 180) {
 			throw new IllegalArgumentException("경도 값은 -180 ~ 180 사이여야 합니다.");
 		}
+		this.latitude = latitude;
+		this.longitude = longitude;
+	}
+
+	public void updateDetails(String content, LocalDate planDate, Double latitude, Double longitude, String location,
+		String locationImage) {
+		this.content = content;
+		this.planDate = planDate;
+		this.latitude = latitude;
+		this.longitude = longitude;
+		this.location = location;
+		this.locationImage = locationImage;
 	}
 }

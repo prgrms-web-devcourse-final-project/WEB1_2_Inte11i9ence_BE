@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import com.prgrmsfinal.skypedia.member.entity.Member;
 import com.prgrmsfinal.skypedia.member.service.MemberService;
+import com.prgrmsfinal.skypedia.planShare.dto.PlanGroupRequestDTO;
 import com.prgrmsfinal.skypedia.post.dto.PostRequestDTO;
 import com.prgrmsfinal.skypedia.reply.dto.ReplyRequestDTO;
 import com.prgrmsfinal.skypedia.reply.dto.ReplyResponseDTO;
@@ -76,6 +77,21 @@ public class ReplyServiceImpl implements ReplyService {
 		return replyRepository.save(Reply.builder()
 			.parentReply(parentReply)
 			.content(request.getContent())
+			.build());
+	}
+
+	@Override
+	public Reply create(PlanGroupRequestDTO.CreateReply groupCreateReply, Member member) {
+		Reply parentReply = null;
+
+		if (groupCreateReply.getParentId() != null) {
+			parentReply = replyRepository.findById(groupCreateReply.getParentId())
+				.orElseThrow(ReplyError.NOT_FOUND_PARENT_REPLY::getException);
+		}
+
+		return replyRepository.save(Reply.builder()
+			.parentReply(parentReply)
+			.content(groupCreateReply.getContent())
 			.build());
 	}
 

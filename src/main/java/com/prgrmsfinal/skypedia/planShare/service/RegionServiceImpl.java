@@ -29,55 +29,52 @@ public class RegionServiceImpl implements RegionService {
 	@Override
 	public RegionDTO read(Long id) {
 		Optional<Region> region = regionRepository.findById(id);
-		return region.map(this::entityToDto).orElseThrow(PlanError.NOT_FOUND::get);
+		return region.map(this::entityToDto).orElseThrow(PlanError.NOT_FOUND::getException);
 	}
 
 	@Override
 	public RegionDTO register(RegionDTO regionDTO) {
-		try {
-			Region region = dtoToEntity(regionDTO);
-			region = regionRepository.save(region);
-			return entityToDto(region);
-		} catch (Exception e) {
-			log.error(e.getMessage());
-			throw PlanError.NOT_REGISTERED.get();
-		}
+		Region region = dtoToEntity(regionDTO);
+		region = regionRepository.save(region);
+		return entityToDto(region);
 	}
 
 	@Override
 	public RegionDTO update(RegionDTO regionDTO) {
 		Optional<Region> updateRegion = regionRepository.findById(regionDTO.getId());
-		Region region = updateRegion.orElseThrow(PlanError.NOT_FOUND::get);
+		Region region = updateRegion.orElseThrow(PlanError.NOT_FOUND::getException);
 
-		try {
-			region.setName(regionDTO.getName());
-
-			regionRepository.save(region);
-
-			return entityToDto(region);
-		} catch (Exception e) {
-			log.error(e.getMessage());
-			throw PlanError.NOT_MODIFIED.get();
-		}
+		regionRepository.save(region);
+		return entityToDto(region);
 	}
 
 	@Override
 	public void delete(Long id) {
-		Region region = regionRepository.findById(id).orElseThrow(PlanError.NOT_FOUND::get);
+		Region region = regionRepository.findById(id).orElseThrow(PlanError.NOT_FOUND::getException);
 		regionRepository.delete(region);
+	}
+
+	@Override
+	public Optional<Region> findByRegionName(String regionName) {
+		return regionRepository.findByRegionName(regionName);
+	}
+
+	@Override
+	public boolean existsByRegionName(String regionName) {
+		return regionRepository.existsByRegionName(regionName);
 	}
 
 	private RegionDTO entityToDto(Region region) {
 		return RegionDTO.builder()
 			.id(region.getId())
-			.name(region.getName())
+			.name(region.getRegionName())
 			.build();
 	}
 
 	private Region dtoToEntity(RegionDTO regionDTO) {
 		return Region.builder()
 			.id(regionDTO.getId())
-			.name(regionDTO.getName())
+			.regionName(regionDTO.getName())
 			.build();
 	}
 }
