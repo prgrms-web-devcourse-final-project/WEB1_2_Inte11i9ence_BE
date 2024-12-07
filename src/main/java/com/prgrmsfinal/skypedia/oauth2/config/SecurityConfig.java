@@ -1,106 +1,86 @@
 package com.prgrmsfinal.skypedia.oauth2.config;
 
-import java.util.Collections;
-
-import org.springframework.beans.factory.annotation.Value;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.prgrmsfinal.skypedia.oauth2.dto.TokenResponse;
+import com.prgrmsfinal.skypedia.oauth2.jwt.JwtAuthenticationFilter;
+import com.prgrmsfinal.skypedia.oauth2.jwt.JwtTokenProvider;
+import com.prgrmsfinal.skypedia.oauth2.service.NaverOAuth2Service;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
+
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import com.prgrmsfinal.skypedia.oauth2.jwt.CustomSuccessHandler;
-import com.prgrmsfinal.skypedia.oauth2.jwt.JWTFilter;
-import com.prgrmsfinal.skypedia.oauth2.jwt.JWTUtil;
-import com.prgrmsfinal.skypedia.oauth2.service.CustomOAuth2UserService;
+import java.util.Arrays;
 
-import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-
-	private final CustomSuccessHandler customSuccessHandler;
-	private final CustomOAuth2UserService customOAuth2UserService;
-	private final JWTUtil jwtUtil;
-
-	@Value("${frontend.url}")
-	private String frontendUrl;
-	@Value("${backend.url}")
-	private String backendUrl;
+	private final NaverOAuth2Service naverOAuth2Service;
+	private final JwtTokenProvider jwtTokenProvider;
 
 	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-
 		http
-			.cors(corsCustomizer -> corsCustomizer.configurationSource(new CorsConfigurationSource() {
-
-				@Override
-				public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
-
-					CorsConfiguration configuration = new CorsConfiguration();
-
-					configuration.setAllowedOrigins(Collections.singletonList(frontendUrl));
-					configuration.setAllowedMethods(Collections.singletonList("*"));
-					configuration.setAllowCredentials(true);
-					configuration.setAllowedHeaders(Collections.singletonList("*"));
-					configuration.setMaxAge(3600L);
-
-					configuration.setExposedHeaders(Collections.singletonList("Set-Cookie"));
-					configuration.setExposedHeaders(Collections.singletonList("Authorization"));
-
-					return configuration;
-				}
-			}));
-		//csrf disable
-		http
-			.csrf((auth) -> auth.disable());
-
-		//From 로그인 방식 disable
-		http
-			.formLogin((auth) -> auth.disable());
-
-		//HTTP Basic 인증 방식 disable
-		http
-			.httpBasic((auth) -> auth.disable());
-
-		http
-			.addFilterBefore(new JWTFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
-
-		//oauth2
-		http
-			.oauth2Login((oauth2) -> oauth2
-				.userInfoEndpoint((userInfoEndpointConfig -> userInfoEndpointConfig
-					.userService(customOAuth2UserService)))
-				.successHandler(customSuccessHandler));
-
-		//경로별 인가 작업
-		http
-			.authorizeHttpRequests((auth) -> auth
-				.requestMatchers("/", "/login", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**",
-					"/webjars/**", "/actuator/**")
-				.permitAll()
-				.anyRequest()
-				.authenticated());
-
-		//세션 설정 : STATELESS
-		http
-			.sessionManagement((session) -> session
-				.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-
-		http.logout(logout -> logout
-			.logoutUrl("/logout")
-			.logoutSuccessUrl(frontendUrl)
-			.invalidateHttpSession(false)  // 세션 무효화 비활성화 (stateless 방식에선 필요 없음)
-			.clearAuthentication(true)  // SecurityContext 초기화
-			.deleteCookies("Authorization"));  // JWT가 저장된 쿠키 삭제
+				.csrf(csrf -> csrf.disable())
+				.cors(cors -> cors.configurationSource(corsConfigurationSource()))
+				.sessionManagement(session -> session
+						.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.exceptionHandling(exceptionHandling -> exceptionHandling
+						.authenticationEntryPoint((request, response, authException) -> {
+							response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+							response.setContentType("application/json");
+							response.setCharacterEncoding("UTF-8");
+							response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \""
+									+ authException.getMessage() + "\"}");
+						}))
+				.authorizeHttpRequests(auth -> auth
+						.requestMatchers("/login/oauth2/code/**", "/oauth2/authorization/**",
+								"/error", "/login", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**",
+								"/webjars/**", "/actuator/**",
+								"/api/v1/").permitAll()
+						.requestMatchers(HttpMethod.GET,"/api/v1/region",
+								"/api/v1/posts","/api/v1/plan-group",
+								"/api/v1/photo","/api/v1/notify",
+								"/api/v1/post-category").permitAll()
+						.anyRequest().authenticated())
+				.oauth2Login(oauth2 -> oauth2
+						.successHandler((request, response, authentication) -> {
+							OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
+							TokenResponse tokenResponse = naverOAuth2Service
+									.authenticateNaverUser(oauth2User.getAttributes());
+							String redirectUrl = String.format("http://localhost:5173/oauth/callback?token=%s&refreshToken=%s",
+									tokenResponse.getAccessToken(),
+									tokenResponse.getRefreshToken());
+							response.sendRedirect(redirectUrl);
+						}))
+				.addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
+						UsernamePasswordAuthenticationFilter.class);
 
 		return http.build();
+	}
+	@Bean
+	public CorsConfigurationSource corsConfigurationSource() {
+		CorsConfiguration config = new CorsConfiguration();
+		config.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
+		config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+		config.setAllowedHeaders(Arrays.asList("*"));
+		config.setAllowCredentials(true);
+
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		source.registerCorsConfiguration("/**", config);
+		return source;
 	}
 }

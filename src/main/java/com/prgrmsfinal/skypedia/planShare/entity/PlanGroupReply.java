@@ -1,6 +1,11 @@
 package com.prgrmsfinal.skypedia.planShare.entity;
 
-import com.prgrmsfinal.skypedia.member.entity.Member;
+import java.time.LocalDateTime;
+
+import org.springframework.data.annotation.CreatedDate;
+
+import com.prgrmsfinal.skypedia.planShare.entity.key.PlanGroupReplyId;
+import com.prgrmsfinal.skypedia.reply.entity.Reply;
 
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
@@ -8,14 +13,15 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Builder
+@Getter
 @NoArgsConstructor
 @AllArgsConstructor
 public class PlanGroupReply {
-
 	@EmbeddedId
 	private PlanGroupReplyId id;
 
@@ -24,6 +30,9 @@ public class PlanGroupReply {
 	private PlanGroup planGroup;
 
 	@ManyToOne
-	@MapsId("memberId")
-	private Member member;
+	@MapsId("replyId")
+	private Reply reply;
+
+	@CreatedDate
+	private LocalDateTime repliedAt;
 }

@@ -1,15 +1,30 @@
 package com.prgrmsfinal.skypedia.reply.service;
 
-import java.util.List;
+import org.springframework.security.core.Authentication;
 
-import com.prgrmsfinal.skypedia.reply.dto.ReplyDTO;
+import com.prgrmsfinal.skypedia.member.entity.Member;
+import com.prgrmsfinal.skypedia.planShare.dto.PlanGroupRequestDTO;
+import com.prgrmsfinal.skypedia.post.dto.PostRequestDTO;
+import com.prgrmsfinal.skypedia.reply.dto.ReplyRequestDTO;
+import com.prgrmsfinal.skypedia.reply.dto.ReplyResponseDTO;
+import com.prgrmsfinal.skypedia.reply.entity.Reply;
 
 public interface ReplyService {
-	List<ReplyDTO> readAll(ReplyDTO replyDTO);
+	ReplyResponseDTO.ReadAll readAll(Authentication authentication, Long parentId, Long lastReplyId);
 
-	ReplyDTO register(ReplyDTO replyDTO);
+	Reply create(PostRequestDTO.CreateReply request, Member member);
 
-	ReplyDTO update(ReplyDTO replyDTO);
+	Reply create(PlanGroupRequestDTO.CreateReply groupCreateReply, Member member);
 
-	void delete(Long id);
+	void modify(Authentication authentication, Long replyId, ReplyRequestDTO.Modify request);
+
+	void delete(Authentication authentication, Long replyId);
+
+	void restore(Authentication authentication, Long replyId);
+
+	ReplyResponseDTO.ToggleLikes toggleLikes(Authentication authentication, Long replyId);
+
+	Long getLikes(Reply reply);
+
+	boolean isCurrentMemberLiked(Authentication authentication, Reply reply);
 }

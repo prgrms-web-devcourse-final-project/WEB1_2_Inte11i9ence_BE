@@ -1,12 +1,10 @@
 package com.prgrmsfinal.skypedia.member.service;
 
-
 import com.prgrmsfinal.skypedia.member.dto.MemberRequestDTO;
 import com.prgrmsfinal.skypedia.member.dto.MemberResponseDTO;
 import com.prgrmsfinal.skypedia.member.entity.Member;
 import com.prgrmsfinal.skypedia.member.exception.MemberError;
 import com.prgrmsfinal.skypedia.member.repository.MemberRepository;
-import com.prgrmsfinal.skypedia.oauth2.dto.CustomOAuth2User;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
@@ -15,12 +13,17 @@ import lombok.extern.log4j.Log4j2;
 import org.hibernate.Session;
 
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -32,9 +35,27 @@ public class MemberServiceImpl implements MemberService{
     private EntityManager entityManager;    // 필터를 사용할 엔티티 매니저 주입
 
     public Member getAuthenticatedMember(Authentication authentication) {
-        CustomOAuth2User customOAuth2User = (CustomOAuth2User) authentication.getPrincipal();
-        String authenticatedOauthId = customOAuth2User.getOauthId();
-        return memberRepository.findByOauthId(authenticatedOauthId);
+        if (authentication == null) {
+            throw new AuthenticationCredentialsNotFoundException("Authentication is required");
+        }
+
+        String email;
+        if (authentication.getPrincipal() instanceof UserDetails) {
+            email = ((UserDetails) authentication.getPrincipal()).getUsername();
+        } else if (authentication.getPrincipal() instanceof OAuth2User) {
+            Map<String, Object> attributes = ((OAuth2User) authentication.getPrincipal()).getAttributes();
+            // Naver의 경우 response 내부에 실제 사용자 정보가 있음
+            Map<String, Object> response = (Map<String, Object>) attributes.get("response");
+            email = (String) response.get("email");
+        } else {
+            throw new AuthenticationCredentialsNotFoundException("Unsupported authentication type");
+        }
+
+        Member member = memberRepository.findByEmail(email);
+        if (member == null) {
+            throw new UsernameNotFoundException("Member not found with email: " + email);
+        }
+        return member;
     }
 
     //회원 수정
@@ -111,5 +132,15 @@ public class MemberServiceImpl implements MemberService{
             // 반드시 필터 다시 활성화
             session.enableFilter("withdrawnFilter");
         }
+    }
+    
+    @Override
+    public boolean checkExistsByUsername(String username) {
+      return memberRepository.existsByUsername(username);
+    }
+
+    @Override
+    public Member getByUsername(String username) {
+      return memberRepository.findByUsername(username).orElse(null);
     }
 }
