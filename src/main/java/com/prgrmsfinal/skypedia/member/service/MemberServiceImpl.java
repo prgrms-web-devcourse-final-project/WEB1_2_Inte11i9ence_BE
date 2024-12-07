@@ -5,7 +5,6 @@ import com.prgrmsfinal.skypedia.member.dto.MemberResponseDTO;
 import com.prgrmsfinal.skypedia.member.entity.Member;
 import com.prgrmsfinal.skypedia.member.exception.MemberError;
 import com.prgrmsfinal.skypedia.member.repository.MemberRepository;
-import com.prgrmsfinal.skypedia.oauth2.jwt.CustomUserDetails;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
@@ -35,32 +34,6 @@ public class MemberServiceImpl implements MemberService{
     @PersistenceContext
     private EntityManager entityManager;    // 필터를 사용할 엔티티 매니저 주입
 
-//    public Member getAuthenticatedMember(Authentication authentication) {
-//        if (authentication == null) {
-//            throw new AuthenticationCredentialsNotFoundException("Authentication is required");
-//        }
-//
-//        // CustomUserDetails인 경우 바로 id로 조회
-//        if (authentication.getPrincipal() instanceof CustomUserDetails) {
-//            Long id = ((CustomUserDetails) authentication.getPrincipal()).getId();
-//            return memberRepository.findById(id)
-//                    .orElseThrow(() -> new UsernameNotFoundException("Member not found"));
-//        }
-//        // OAuth2User인 경우 기존 로직 유지
-//        else if (authentication.getPrincipal() instanceof OAuth2User) {
-//            Map<String, Object> attributes = ((OAuth2User) authentication.getPrincipal()).getAttributes();
-//            Map<String, Object> response = (Map<String, Object>) attributes.get("response");
-//            String email = (String) response.get("email");
-//
-//            Member member = memberRepository.findByEmail(email);
-//            if (member == null) {
-//                throw new UsernameNotFoundException("Member not found with email: " + email);
-//            }
-//            return member;
-//        }
-//
-//        throw new AuthenticationCredentialsNotFoundException("Unsupported authentication type");
-//    }
     public Member getAuthenticatedMember(Authentication authentication) {
         if (authentication == null) {
             throw new AuthenticationCredentialsNotFoundException("Authentication is required");
@@ -160,14 +133,14 @@ public class MemberServiceImpl implements MemberService{
             session.enableFilter("withdrawnFilter");
         }
     }
-    
+
     @Override
     public boolean checkExistsByUsername(String username) {
-      return memberRepository.existsByUsername(username);
+        return memberRepository.existsByUsername(username);
     }
 
     @Override
     public Member getByUsername(String username) {
-      return memberRepository.findByUsername(username).orElse(null);
+        return memberRepository.findByUsername(username).orElse(null);
     }
 }
