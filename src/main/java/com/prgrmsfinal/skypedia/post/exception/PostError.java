@@ -13,6 +13,7 @@ public enum PostError {
 	NOT_FOUND_USERNAME(HttpStatus.NOT_FOUND, "해당 회원이 존재하지 않습니다."),
 	UNAUTHORIZED_CREATE(HttpStatus.UNAUTHORIZED, "게시글 작성 권한이 없습니다."),
 	UNAUTHORIZED_CREATE_REPLY(HttpStatus.UNAUTHORIZED, "게시글에 댓글 작성 권한이 없습니다."),
+	UNAUTHORIZED_CREATE_CATEGORY(HttpStatus.UNAUTHORIZED, "게시글 카테고리 생성 권한이 없습니다."),
 	UNAUTHORIZED_MODIFY(HttpStatus.UNAUTHORIZED, "게시글 수정 권한이 없습니다."),
 	UNAUTHORIZED_DELETE(HttpStatus.UNAUTHORIZED, "게시글 삭제 권한이 없습니다."),
 	UNAUTHORIZED_TOGGLE_LIKES(HttpStatus.UNAUTHORIZED, "좋아요 기능은 회원만 사용 가능합니다."),
