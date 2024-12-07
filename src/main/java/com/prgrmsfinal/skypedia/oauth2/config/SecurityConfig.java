@@ -47,7 +47,8 @@ public class SecurityConfig {
 						}))
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/login/oauth2/code/**", "/oauth2/authorization/**",
-								"/error", "/login").permitAll()
+								"/error", "/login", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**",
+								"/webjars/**", "/actuator/**").permitAll()
 						.anyRequest().authenticated())
 				.oauth2Login(oauth2 -> oauth2
 						.successHandler((request, response, authentication) -> {
