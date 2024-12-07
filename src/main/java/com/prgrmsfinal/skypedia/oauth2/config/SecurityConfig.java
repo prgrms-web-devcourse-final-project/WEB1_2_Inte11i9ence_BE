@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -48,7 +49,12 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/login/oauth2/code/**", "/oauth2/authorization/**",
 								"/error", "/login", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**",
-								"/webjars/**", "/actuator/**").permitAll()
+								"/webjars/**", "/actuator/**",
+								"/api/v1/").permitAll()
+						.requestMatchers(HttpMethod.GET,"/api/v1/region",
+								"/api/v1/posts","/api/v1/plan-group",
+								"/api/v1/photo","/api/v1/notify",
+								"/api/v1/post-category").permitAll()
 						.anyRequest().authenticated())
 				.oauth2Login(oauth2 -> oauth2
 						.successHandler((request, response, authentication) -> {
