@@ -1,6 +1,5 @@
 package com.prgrmsfinal.skypedia.member.service;
 
-
 import com.prgrmsfinal.skypedia.member.dto.MemberRequestDTO;
 import com.prgrmsfinal.skypedia.member.dto.MemberResponseDTO;
 import com.prgrmsfinal.skypedia.member.entity.Member;
@@ -133,5 +132,15 @@ public class MemberServiceImpl implements MemberService{
             // 반드시 필터 다시 활성화
             session.enableFilter("withdrawnFilter");
         }
+    }
+    
+    @Override
+    public boolean checkExistsByUsername(String username) {
+      return memberRepository.existsByUsername(username);
+    }
+
+    @Override
+    public Member getByUsername(String username) {
+      return memberRepository.findByUsername(username).orElse(null);
     }
 }
