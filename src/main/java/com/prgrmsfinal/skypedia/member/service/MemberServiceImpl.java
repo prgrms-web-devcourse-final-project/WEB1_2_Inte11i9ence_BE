@@ -5,6 +5,7 @@ import com.prgrmsfinal.skypedia.member.dto.MemberResponseDTO;
 import com.prgrmsfinal.skypedia.member.entity.Member;
 import com.prgrmsfinal.skypedia.member.exception.MemberError;
 import com.prgrmsfinal.skypedia.member.repository.MemberRepository;
+import com.prgrmsfinal.skypedia.oauth2.jwt.CustomUserDetails;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
@@ -39,23 +40,26 @@ public class MemberServiceImpl implements MemberService{
             throw new AuthenticationCredentialsNotFoundException("Authentication is required");
         }
 
-        String email;
-        if (authentication.getPrincipal() instanceof UserDetails) {
-            email = ((UserDetails) authentication.getPrincipal()).getUsername();
-        } else if (authentication.getPrincipal() instanceof OAuth2User) {
+        // CustomUserDetails인 경우 바로 id로 조회
+        if (authentication.getPrincipal() instanceof CustomUserDetails) {
+            Long id = ((CustomUserDetails) authentication.getPrincipal()).getId();
+            return memberRepository.findById(id)
+                    .orElseThrow(() -> new UsernameNotFoundException("Member not found"));
+        }
+        // OAuth2User인 경우 기존 로직 유지
+        else if (authentication.getPrincipal() instanceof OAuth2User) {
             Map<String, Object> attributes = ((OAuth2User) authentication.getPrincipal()).getAttributes();
-            // Naver의 경우 response 내부에 실제 사용자 정보가 있음
             Map<String, Object> response = (Map<String, Object>) attributes.get("response");
-            email = (String) response.get("email");
-        } else {
-            throw new AuthenticationCredentialsNotFoundException("Unsupported authentication type");
+            String email = (String) response.get("email");
+
+            Member member = memberRepository.findByEmail(email);
+            if (member == null) {
+                throw new UsernameNotFoundException("Member not found with email: " + email);
+            }
+            return member;
         }
 
-        Member member = memberRepository.findByEmail(email);
-        if (member == null) {
-            throw new UsernameNotFoundException("Member not found with email: " + email);
-        }
-        return member;
+        throw new AuthenticationCredentialsNotFoundException("Unsupported authentication type");
     }
 
     //회원 수정
