@@ -3,6 +3,8 @@ package com.prgrmsfinal.skypedia.post.controller;
 import java.util.List;
 import java.util.Map;
 
+import com.prgrmsfinal.skypedia.member.entity.Member;
+import com.prgrmsfinal.skypedia.member.service.MemberService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -38,6 +40,7 @@ import lombok.RequiredArgsConstructor;
 @Tag(name = "게시글 API 컨트롤러", description = "게시글과 관련된 REST API를 제공하는 컨트롤러입니다.")
 public class PostController {
 	private final PostService postService;
+	private final MemberService memberService;
 
 	@Operation(
 		summary = "게시글 단일 조회",
