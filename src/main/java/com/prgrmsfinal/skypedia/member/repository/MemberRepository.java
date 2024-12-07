@@ -11,4 +11,5 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     Member findByOauthId(String oauthId);
     Optional<Member> findByUsername(String username);
     List<Member> findByWithdrawnTrueAndWithdrawnAtBefore(LocalDateTime dateTime);
+    Member findByEmail(String email);
 }
