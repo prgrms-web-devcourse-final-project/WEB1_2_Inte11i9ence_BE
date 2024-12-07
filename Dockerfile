@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
 
 RUN apt-get update && apt-get install -y locales
 RUN locale-gen ko_KR.UTF-8
-RUN LC_ALL ko_KR.UTF-8
+ENV LC_ALL ko_KR.UTF-8
 
 # 3. 작업 디렉토리 설정
 WORKDIR /app
