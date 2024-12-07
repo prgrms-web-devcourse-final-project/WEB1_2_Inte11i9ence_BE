@@ -42,24 +42,12 @@ public class MemberController {
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
-//    @GetMapping("/me")
-//    public ResponseEntity<MemberResponseDTO> getCurrentMember() {
-//        try {
-//            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-//            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-//
-//            Member member = memberRepository.findById(userDetails.getId())
-//                    .orElseThrow(() -> new UsernameNotFoundException("Member not found"));
-//            return ResponseEntity.ok(new MemberResponseDTO(member));
-//        } catch (Exception e) {
-//            log.error("Error getting current member: {}", e.getMessage());
-//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-//        }
-//    }
     @GetMapping("/me")
-    public ResponseEntity<MemberResponseDTO> getCurrentMember(@AuthenticationPrincipal CustomUserDetails userDetails) {
+    public ResponseEntity<MemberResponseDTO> getCurrentMember() {
         try {
-            // JWT 토큰으로 인증된 사용자 처리
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+
             Member member = memberRepository.findById(userDetails.getId())
                     .orElseThrow(() -> new UsernameNotFoundException("Member not found"));
             return ResponseEntity.ok(new MemberResponseDTO(member));
@@ -68,6 +56,18 @@ public class MemberController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
+//    @GetMapping("/me")
+//    public ResponseEntity<MemberResponseDTO> getCurrentMember(@AuthenticationPrincipal CustomUserDetails userDetails) {
+//        try {
+//            // JWT 토큰으로 인증된 사용자 처리
+//            Member member = memberRepository.findById(userDetails.getId())
+//                    .orElseThrow(() -> new UsernameNotFoundException("Member not found"));
+//            return ResponseEntity.ok(new MemberResponseDTO(member));
+//        } catch (Exception e) {
+//            log.error("Error getting current member: {}", e.getMessage());
+//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+//        }
+//    }
 
     /** 내 계정 수정 */
     @Operation(summary = "내 계정 수정", description = "현재 인증된 사용자의 계정 정보를 수정합니다.")
