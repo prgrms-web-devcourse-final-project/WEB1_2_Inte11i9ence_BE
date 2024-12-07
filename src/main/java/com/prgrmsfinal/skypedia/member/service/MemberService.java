@@ -20,4 +20,6 @@ public interface MemberService {
 	void physicalDeleteMember();
 
 	boolean checkExistsByUsername(String username);
+
+	Member getByUsername(String username);
 }

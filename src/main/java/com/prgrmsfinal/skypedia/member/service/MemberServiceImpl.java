@@ -115,4 +115,9 @@ public class MemberServiceImpl implements MemberService {
 	public boolean checkExistsByUsername(String username) {
 		return memberRepository.existsByUsername(username);
 	}
+
+	@Override
+	public Member getByUsername(String username) {
+		return memberRepository.findByUsername(username).orElse(null);
+	}
 }

@@ -1,4 +1,4 @@
-package com.prgrmsfinal.skypedia.reply.mapper;
+package com.prgrmsfinal.skypedia.reply.util;
 
 import com.prgrmsfinal.skypedia.member.mapper.MemberMapper;
 import com.prgrmsfinal.skypedia.reply.dto.ReplyResponseDTO;
