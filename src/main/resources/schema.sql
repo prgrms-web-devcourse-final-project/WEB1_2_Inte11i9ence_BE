@@ -168,3 +168,33 @@ CREATE TABLE IF NOT EXISTS reply_likes
     FOREIGN KEY (reply_id) REFERENCES reply (id) ON DELETE CASCADE,
     FOREIGN KEY (member_id) REFERENCES member (id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS plan_group_reply
+(
+    plan_group_id BIGINT NOT NULL,
+    reply_id      BIGINT NOT NULL,
+    replied_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (plan_group_id, reply_id),
+    FOREIGN KEY (plan_group_id) REFERENCES post (id) ON DELETE CASCADE,
+    FOREIGN KEY (reply_id) REFERENCES reply (id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS plan_group_scrap
+(
+    plan_group_id BIGINT NOT NULL,
+    member_id     BIGINT NOT NULL,
+    scraped_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (plan_group_id, member_id),
+    FOREIGN KEY (plan_group_id) REFERENCES post (id) ON DELETE CASCADE,
+    FOREIGN KEY (member_id) REFERENCES member (id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS plan_group_likes
+(
+    plan_group_id BIGINT NOT NULL,
+    member_id     BIGINT NOT NULL,
+    liked_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (plan_group_id, member_id),
+    FOREIGN KEY (plan_group_id) REFERENCES post (id) ON DELETE CASCADE,
+    FOREIGN KEY (member_id) REFERENCES member (id) ON DELETE CASCADE
+);

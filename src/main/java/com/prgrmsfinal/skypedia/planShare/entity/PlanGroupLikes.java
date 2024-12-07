@@ -4,8 +4,8 @@ import java.time.LocalDateTime;
 
 import org.springframework.data.annotation.CreatedDate;
 
-import com.prgrmsfinal.skypedia.planShare.entity.key.PlanGroupReplyId;
-import com.prgrmsfinal.skypedia.reply.entity.Reply;
+import com.prgrmsfinal.skypedia.member.entity.Member;
+import com.prgrmsfinal.skypedia.planShare.entity.key.PlanGroupLikesId;
 
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
@@ -17,22 +17,22 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Builder
 @Getter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PlanGroupReply {
+public class PlanGroupLikes {
 	@EmbeddedId
-	private PlanGroupReplyId id;
+	private PlanGroupLikesId id;
 
 	@ManyToOne
 	@MapsId("planGroupId")
 	private PlanGroup planGroup;
 
 	@ManyToOne
-	@MapsId("replyId")
-	private Reply reply;
+	@MapsId("memberId")
+	private Member member;
 
 	@CreatedDate
-	private LocalDateTime repliedAt;
+	private LocalDateTime likedAt;
 }
