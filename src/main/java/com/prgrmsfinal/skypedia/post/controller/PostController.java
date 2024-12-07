@@ -199,20 +199,9 @@ public class PostController {
 			)
 		}
 	)
-//	@PostMapping("/post")
-//	public ResponseEntity<?> create(Authentication authentication, PostRequestDTO.Create request) {
-//		List<String> uploadUrls = postService.create(authentication, request);
-//
-//		if (uploadUrls.isEmpty()) {
-//			return ResponseEntity.status(HttpStatus.CREATED).build();
-//		}
-//
-//		return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("uploadUrls", uploadUrls));
-//	}
 	@PostMapping("/post")
-	public ResponseEntity<?> create(@AuthenticationPrincipal CustomUserDetails userDetails,
-									@RequestBody PostRequestDTO.Create request) {
-		List<String> uploadUrls = postService.create(userDetails.getId(), request);
+	public ResponseEntity<?> create(Authentication authentication, PostRequestDTO.Create request) {
+		List<String> uploadUrls = postService.create(authentication, request);
 
 		if (uploadUrls.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.CREATED).build();
@@ -220,6 +209,17 @@ public class PostController {
 
 		return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("uploadUrls", uploadUrls));
 	}
+//	@PostMapping("/post")
+//	public ResponseEntity<?> create(@AuthenticationPrincipal CustomUserDetails userDetails,
+//									@RequestBody PostRequestDTO.Create request) {
+//		List<String> uploadUrls = postService.create(userDetails.getId(), request);
+//
+//		if (uploadUrls.isEmpty()) {
+//			return ResponseEntity.status(HttpStatus.CREATED).build();
+//		}
+//
+//		return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("uploadUrls", uploadUrls));
+//	}
 
 	@PostMapping("/post/{postId}/reply")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
