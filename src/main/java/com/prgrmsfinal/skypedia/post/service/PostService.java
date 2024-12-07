@@ -21,8 +21,8 @@ public interface PostService {
 
 	ReplyResponseDTO.ReadAll readReplies(Authentication authentication, Long postId, Long lastReplyId);
 
-	//List<String> create(Authentication authentication, PostRequestDTO.Create request);
-	List<String> create(Long memberId, PostRequestDTO.Create request);
+	List<String> create(Authentication authentication, PostRequestDTO.Create request);
+//	List<String> create(Long memberId, PostRequestDTO.Create request);
 
 	void createReply(Authentication authentication, Long postId, PostRequestDTO.CreateReply request);
 

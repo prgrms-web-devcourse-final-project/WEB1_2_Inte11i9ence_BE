@@ -247,46 +247,18 @@ public class PostServiceImpl implements PostService {
 		return postReplyService.readAll(authentication, postId, lastReplyId);
 	}
 
-//	@Override
-//	public List<String> create(Authentication authentication, PostRequestDTO.Create request) {
-//		if (!authentication.isAuthenticated()) {
-//			throw PostError.UNAUTHORIZED_CREATE.getException();
-//		}
-//
-//		PostCategory category = postCategoryService.getByName(request.getCategory())
-//			.orElseThrow(PostError.NOT_FOUND_CATEGORY::getException);
-//
-//		Member member = memberService.getAuthenticatedMember(authentication);
-//
-//		Post post = postRepository.save(Post.builder()
-//			.title(request.getTitle())
-//			.content(request.getContent())
-//			.category(category)
-//			.rating(request.getRating())
-//			.hashtags(String.join(",", request.getHashtags()))
-//			.member(member)
-//			.build());
-//
-//		if (category.getName().equals("공지")) {
-//			eventPublisher.publishEvent(NotifyRequestDTO.Global.builder()
-//				.notifyType(NotifyType.NOTICE)
-//				.content("새로운 공지가 등록되었습니다.")
-//				.uri("/api/v1/post/" + post.getId())
-//				.build());
-//		}
-//
-//		// 사진 연동 작업이 필요함!!!
-//		return null;
-//	}
-@Override
-public List<String> create(Long memberId, PostRequestDTO.Create request) {
-	Member member = memberRepository.findById(memberId)
-			.orElseThrow(() -> new UsernameNotFoundException("Member not found"));
+	@Override
+	public List<String> create(Authentication authentication, PostRequestDTO.Create request) {
+		if (!authentication.isAuthenticated()) {
+			throw PostError.UNAUTHORIZED_CREATE.getException();
+		}
 
-	PostCategory category = postCategoryService.getByName(request.getCategory())
+		PostCategory category = postCategoryService.getByName(request.getCategory())
 			.orElseThrow(PostError.NOT_FOUND_CATEGORY::getException);
 
-	Post post = postRepository.save(Post.builder()
+		Member member = memberService.getAuthenticatedMember(authentication);
+
+		Post post = postRepository.save(Post.builder()
 			.title(request.getTitle())
 			.content(request.getContent())
 			.category(category)
@@ -295,17 +267,45 @@ public List<String> create(Long memberId, PostRequestDTO.Create request) {
 			.member(member)
 			.build());
 
-	if (category.getName().equals("공지")) {
-		eventPublisher.publishEvent(NotifyRequestDTO.Global.builder()
+		if (category.getName().equals("공지")) {
+			eventPublisher.publishEvent(NotifyRequestDTO.Global.builder()
 				.notifyType(NotifyType.NOTICE)
 				.content("새로운 공지가 등록되었습니다.")
 				.uri("/api/v1/post/" + post.getId())
 				.build());
-	}
+		}
 
-	// 사진 연동 작업이 필요함!!!
-	return null;
-}
+		// 사진 연동 작업이 필요함!!!
+		return null;
+	}
+//@Override
+//public List<String> create(Long memberId, PostRequestDTO.Create request) {
+//	Member member = memberRepository.findById(memberId)
+//			.orElseThrow(() -> new UsernameNotFoundException("Member not found"));
+//
+//	PostCategory category = postCategoryService.getByName(request.getCategory())
+//			.orElseThrow(PostError.NOT_FOUND_CATEGORY::getException);
+//
+//	Post post = postRepository.save(Post.builder()
+//			.title(request.getTitle())
+//			.content(request.getContent())
+//			.category(category)
+//			.rating(request.getRating())
+//			.hashtags(String.join(",", request.getHashtags()))
+//			.member(member)
+//			.build());
+//
+//	if (category.getName().equals("공지")) {
+//		eventPublisher.publishEvent(NotifyRequestDTO.Global.builder()
+//				.notifyType(NotifyType.NOTICE)
+//				.content("새로운 공지가 등록되었습니다.")
+//				.uri("/api/v1/post/" + post.getId())
+//				.build());
+//	}
+//
+//	// 사진 연동 작업이 필요함!!!
+//	return null;
+//}
 
 	@Override
 	public void createReply(Authentication authentication, Long postId, PostRequestDTO.CreateReply request) {
