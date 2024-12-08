@@ -72,3 +72,55 @@ VALUES (18, '강원도',
 INSERT IGNORE INTO post_category(id, name, description)
 VALUES (19, '제주도',
         '제주도는 한국에서 가장 유명한 관광지로, 화산섬의 독특한 자연과 아름다운 해변, 그리고 풍부한 문화유산이 매력적인 곳입니다. 한라산과 같은 명산이 있고, 제주 올레길은 트레킹을 즐기기에 최적의 장소로 알려져 있습니다. 제주도는 또한 돌하르방과 같은 전통적인 상징물과 제주 흑돼지와 같은 특산물로 미식 여행지로도 유명합니다. 제주도는 풍부한 자연과 독특한 문화, 여유로운 분위기로 국내외 관광객들에게 큰 사랑을 받는 곳입니다.');
+
+-- 지역 카테고리 초기 데이터
+INSERT IGNORE INTO region(id, name)
+VALUES (1, '서울');
+
+INSERT IGNORE INTO region(id, name)
+VALUES (2, '부산');
+
+INSERT IGNORE INTO region(id, name)
+VALUES (3, '대구');
+
+INSERT IGNORE INTO region(id, name)
+VALUES (4, '인천');
+
+INSERT IGNORE INTO region(id, name)
+VALUES (5, '광주');
+
+INSERT IGNORE INTO region(id, name)
+VALUES (6, '대전');
+
+INSERT IGNORE INTO region(id, name)
+VALUES (7, '울산');
+
+INSERT IGNORE INTO region(id, name)
+VALUES (8, '세종');
+
+INSERT IGNORE INTO region(id, name)
+VALUES (9, '경기도');
+
+INSERT IGNORE INTO region(id, name)
+VALUES (10, '충청북도');
+
+INSERT IGNORE INTO region(id, name)
+VALUES (11, '충청남도');
+
+INSERT IGNORE INTO region(id, name)
+VALUES (12, '전라북도');
+
+INSERT IGNORE INTO region(id, name)
+VALUES (13, '전라남도');
+
+INSERT IGNORE INTO region(id, name)
+VALUES (14, '경상북도');
+
+INSERT IGNORE INTO region(id, name)
+VALUES (15, '경상남도');
+
+INSERT IGNORE INTO region(id, name)
+VALUES (16, '강원도');
+
+INSERT IGNORE INTO region(id, name)
+VALUES (17, '제주도');
