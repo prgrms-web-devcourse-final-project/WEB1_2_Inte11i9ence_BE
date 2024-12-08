@@ -7,8 +7,7 @@ import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.prgrmsfinal.skypedia.global.entity.BaseTime;
-
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
@@ -34,7 +33,7 @@ import lombok.ToString;
 @EntityListeners(value = {AuditingEntityListener.class})
 @FilterDef(name = "withdrawnFilter", parameters = @ParamDef(name = "withdrawn", type = Boolean.class))
 @Filter(name = "withdrawnFilter", condition = "withdrawn = :withdrawn")
-public class Member extends BaseTime {
+public class Member {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;                //자동생성 고유식별자
@@ -57,4 +56,10 @@ public class Member extends BaseTime {
 	private boolean withdrawn = false; // 탈퇴 여부
 
 	private LocalDateTime withdrawnAt;//탈퇴 날짜
+
+	@Column(insertable = false, updatable = false)
+	private LocalDateTime createdAt;
+
+	@Column(insertable = false, updatable = false)
+	private LocalDateTime updatedAt;
 }

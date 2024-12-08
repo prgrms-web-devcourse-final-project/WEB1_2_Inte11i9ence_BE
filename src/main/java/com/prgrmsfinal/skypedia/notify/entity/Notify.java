@@ -2,10 +2,10 @@ package com.prgrmsfinal.skypedia.notify.entity;
 
 import java.time.LocalDateTime;
 
-import com.prgrmsfinal.skypedia.global.entity.BaseTime;
 import com.prgrmsfinal.skypedia.member.entity.Member;
 import com.prgrmsfinal.skypedia.notify.constant.NotifyType;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -24,7 +24,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-public class Notify extends BaseTime {
+public class Notify {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -41,6 +41,12 @@ public class Notify extends BaseTime {
 	@ManyToOne
 	@JoinColumn(name = "member_id")
 	private Member member;
+
+	@Column(insertable = false, updatable = false)
+	private LocalDateTime createdAt;
+
+	@Column(insertable = false, updatable = false)
+	private LocalDateTime updatedAt;
 
 	private LocalDateTime sentAt;
 

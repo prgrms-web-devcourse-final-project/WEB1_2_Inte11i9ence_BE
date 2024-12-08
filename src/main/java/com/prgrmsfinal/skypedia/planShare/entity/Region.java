@@ -1,7 +1,5 @@
 package com.prgrmsfinal.skypedia.planShare.entity;
 
-import com.prgrmsfinal.skypedia.global.entity.BaseTime;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -18,8 +16,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "region")
-public class Region extends BaseTime {
-
+public class Region {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;

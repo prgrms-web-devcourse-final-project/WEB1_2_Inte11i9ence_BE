@@ -3,9 +3,9 @@ package com.prgrmsfinal.skypedia.post.entity;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.prgrmsfinal.skypedia.global.entity.BaseTime;
 import com.prgrmsfinal.skypedia.member.entity.Member;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -22,7 +22,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-public class Post extends BaseTime {
+public class Post {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -51,6 +51,12 @@ public class Post extends BaseTime {
 
 	@Builder.Default
 	private boolean deleted = false;
+
+	@Column(insertable = false, updatable = false)
+	private LocalDateTime createdAt;
+
+	@Column(insertable = false, updatable = false)
+	private LocalDateTime updatedAt;
 
 	private LocalDateTime deletedAt;
 
