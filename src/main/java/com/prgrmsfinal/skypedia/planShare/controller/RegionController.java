@@ -53,37 +53,8 @@ public class RegionController {
 	)
 	@GetMapping
 	@ResponseStatus(HttpStatus.OK)
-	public List<RegionDTO> readAll(@Valid @RequestBody RegionDTO regionDTO) {
-		return regionService.readAll(regionDTO);
-	}
-
-	@Operation(
-		summary = "단일 지역 카테고리 조회",
-		description = "ID와 일치하는 지역 카테고리를 조회합니다.",
-		responses = {
-			@ApiResponse(
-				responseCode = "200",
-				description = "지역 카테고리를 성공적으로 조회했습니다.",
-				content = @Content(mediaType = "application/json")
-			),
-			@ApiResponse(
-				responseCode = "404",
-				description = "지역 카테고리가 존재하지 않습니다.",
-				content = @Content(mediaType = "application/json")
-			)
-		}
-	)
-	@Parameter(
-		name = "id",
-		description = "조회할 지역 카테고리의 ID",
-		required = true,
-		example = "1",
-		schema = @Schema(type = "integer")
-	)
-	@GetMapping("/{id}")
-	@ResponseStatus(HttpStatus.OK)
-	public RegionDTO read(@PathVariable("id") @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long id) {
-		return regionService.read(id);
+	public List<RegionDTO> readAll() {
+		return regionService.readAll();
 	}
 
 	@Operation(
