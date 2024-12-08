@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import com.prgrmsfinal.skypedia.member.entity.Member;
 import com.prgrmsfinal.skypedia.reply.entity.key.ReplyLikesId;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToOne;
@@ -30,6 +31,12 @@ public class ReplyLikes {
 	@ManyToOne
 	@MapsId("memberId")
 	private Member member;
+
+	@Column(insertable = false, updatable = false)
+	private LocalDateTime createdAt;
+
+	@Column(insertable = false, updatable = false)
+	private LocalDateTime updatedAt;
 
 	private LocalDateTime likedAt;
 }
