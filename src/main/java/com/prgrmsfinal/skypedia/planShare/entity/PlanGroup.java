@@ -4,10 +4,10 @@ import java.time.LocalDateTime;
 import java.util.LinkedList;
 import java.util.List;
 
-import com.prgrmsfinal.skypedia.global.entity.BaseTime;
 import com.prgrmsfinal.skypedia.member.entity.Member;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -28,7 +28,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "plan_group")
-public class PlanGroup extends BaseTime {
+public class PlanGroup {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -59,6 +59,12 @@ public class PlanGroup extends BaseTime {
 	private Boolean deleted = false;     // 논리 삭제 여부
 
 	private LocalDateTime deletedAt;    // 게시물 삭제 일자
+
+	@Column(insertable = false, updatable = false)
+	private LocalDateTime createdAt;
+
+	@Column(insertable = false, updatable = false)
+	private LocalDateTime updatedAt;
 
 	public void modify(String title, String groupImage) {
 		this.title = title;
