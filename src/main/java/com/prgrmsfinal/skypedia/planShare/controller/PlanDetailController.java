@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,12 +26,15 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 
 @Tag(name = "일정 공유 게시물 세부 일정 API 컨트롤러", description = "일정 공유의 세부 일정과 관련된 REST API를 제공하는 컨트롤러입니다.")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/plan-detail")
+@Validated
 public class PlanDetailController {
 	private final PlanDetailService planDetailService;
 
@@ -52,7 +56,8 @@ public class PlanDetailController {
 	)
 	@GetMapping
 	@ResponseStatus(HttpStatus.OK)
-	public List<PlanDetailResponseDTO.ReadAll> readAll(PlanDetailResponseDTO.ReadAll detailReadAll) {
+	public List<PlanDetailResponseDTO.ReadAll> readAll(
+		@Valid @RequestBody PlanDetailResponseDTO.ReadAll detailReadAll) {
 		return planDetailService.readAll(detailReadAll);
 	}
 
@@ -73,7 +78,8 @@ public class PlanDetailController {
 		}
 	)
 	@PostMapping
-	public ResponseEntity<PlanDetailRequestDTO.Create> create(@RequestBody PlanDetailRequestDTO.Create detailCreate) {
+	public ResponseEntity<PlanDetailRequestDTO.Create> create(
+		@Valid @RequestBody PlanDetailRequestDTO.Create detailCreate) {
 		PlanDetailRequestDTO.Create createdPlanDetail = planDetailService.register(detailCreate);
 		return ResponseEntity.status(HttpStatus.CREATED).body(createdPlanDetail);
 	}
@@ -108,8 +114,9 @@ public class PlanDetailController {
 	)
 	@PutMapping("/{id}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public PlanDetailRequestDTO.Update update(@PathVariable("id") Long id,
-		@RequestBody PlanDetailRequestDTO.Update detailUpdate) {
+	public PlanDetailRequestDTO.Update update(
+		@PathVariable @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long id,
+		@Valid @RequestBody PlanDetailRequestDTO.Update detailUpdate) {
 		PlanDetailRequestDTO.Update locationImageUrl = planDetailService.update(id, detailUpdate);
 		return locationImageUrl;
 	}
@@ -144,7 +151,8 @@ public class PlanDetailController {
 	)
 	@DeleteMapping("/{id}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public ResponseEntity<Map<String, String>> delete(@PathVariable("id") Long id) {
+	public ResponseEntity<Map<String, String>> delete(
+		@PathVariable @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long id) {
 		planDetailService.delete(id);
 		return ResponseEntity.ok(Map.of("message", "삭제 완료"));
 	}
