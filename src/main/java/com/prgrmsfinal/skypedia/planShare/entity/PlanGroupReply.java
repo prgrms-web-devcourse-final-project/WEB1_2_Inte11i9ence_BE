@@ -2,8 +2,6 @@ package com.prgrmsfinal.skypedia.planShare.entity;
 
 import java.time.LocalDateTime;
 
-import org.springframework.data.annotation.CreatedDate;
-
 import com.prgrmsfinal.skypedia.planShare.entity.key.PlanGroupReplyId;
 import com.prgrmsfinal.skypedia.reply.entity.Reply;
 
@@ -33,6 +31,5 @@ public class PlanGroupReply {
 	@MapsId("replyId")
 	private Reply reply;
 
-	@CreatedDate
 	private LocalDateTime repliedAt;
 }

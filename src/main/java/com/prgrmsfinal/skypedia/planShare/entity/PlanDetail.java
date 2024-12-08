@@ -3,22 +3,16 @@ package com.prgrmsfinal.skypedia.planShare.entity;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-
 import com.prgrmsfinal.skypedia.global.entity.BaseTime;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -29,12 +23,6 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(
-	name = "plan_detail",
-	indexes = {
-		@Index(name = "idx_plan_detail_location", columnList = "latitude, longitude")
-	}
-)
 public class PlanDetail extends BaseTime {
 
 	@Id
@@ -53,35 +41,22 @@ public class PlanDetail extends BaseTime {
 	@JoinColumn(name = "plan_detail_prev_id")
 	private PlanDetail prePlanDetail;   // 이후 세부 일정
 
-	@Column(nullable = false, columnDefinition = "TEXT")
 	private String location;            // 장소명
 
-	@Column(nullable = false)
 	private String placeId;
 
-	@Column(columnDefinition = "TEXT")
 	private String content;             // 장소 설명
 
-	@Column(nullable = false)
 	private Double latitude;            // 위도
 
-	@Column(nullable = false)
 	private Double longitude;           // 경도
 
-	@Column(nullable = false)
 	private String locationImage;       // 장소 이미지
 
-	@Column(nullable = false)
 	private LocalDate planDate;         // 장소 방문 날짜
 
 	@Builder.Default
 	private Boolean deleted = false;    // 논리 삭제 여부
-
-	@CreatedDate
-	private LocalDateTime createdAt;    // 세부 일정 생성 일자
-
-	@LastModifiedDate
-	private LocalDateTime updatedAt;    // 세부 일정 수정 일자
 
 	private LocalDateTime deletedAt;    // 세부 일정 삭제 일자
 

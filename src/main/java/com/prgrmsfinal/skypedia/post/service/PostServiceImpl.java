@@ -2,6 +2,7 @@ package com.prgrmsfinal.skypedia.post.service;
 
 import java.util.List;
 
+import com.prgrmsfinal.skypedia.member.repository.MemberRepository;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -10,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import com.prgrmsfinal.skypedia.member.dto.MemberResponseDTO;
@@ -39,6 +41,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class PostServiceImpl implements PostService {
 	private final RedisTemplate<String, String> redisTemplate;
+
+	private final MemberRepository memberRepository;
 
 	private final PostRepository postRepository;
 
@@ -274,6 +278,34 @@ public class PostServiceImpl implements PostService {
 		// 사진 연동 작업이 필요함!!!
 		return null;
 	}
+//@Override
+//public List<String> create(Long memberId, PostRequestDTO.Create request) {
+//	Member member = memberRepository.findById(memberId)
+//			.orElseThrow(() -> new UsernameNotFoundException("Member not found"));
+//
+//	PostCategory category = postCategoryService.getByName(request.getCategory())
+//			.orElseThrow(PostError.NOT_FOUND_CATEGORY::getException);
+//
+//	Post post = postRepository.save(Post.builder()
+//			.title(request.getTitle())
+//			.content(request.getContent())
+//			.category(category)
+//			.rating(request.getRating())
+//			.hashtags(String.join(",", request.getHashtags()))
+//			.member(member)
+//			.build());
+//
+//	if (category.getName().equals("공지")) {
+//		eventPublisher.publishEvent(NotifyRequestDTO.Global.builder()
+//				.notifyType(NotifyType.NOTICE)
+//				.content("새로운 공지가 등록되었습니다.")
+//				.uri("/api/v1/post/" + post.getId())
+//				.build());
+//	}
+//
+//	// 사진 연동 작업이 필요함!!!
+//	return null;
+//}
 
 	@Override
 	public void createReply(Authentication authentication, Long postId, PostRequestDTO.CreateReply request) {

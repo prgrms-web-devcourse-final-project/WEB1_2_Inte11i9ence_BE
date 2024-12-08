@@ -2,8 +2,6 @@ package com.prgrmsfinal.skypedia.reply.entity;
 
 import java.time.LocalDateTime;
 
-import org.springframework.data.annotation.CreatedDate;
-
 import com.prgrmsfinal.skypedia.member.entity.Member;
 import com.prgrmsfinal.skypedia.reply.entity.key.ReplyLikesId;
 
@@ -33,6 +31,5 @@ public class ReplyLikes {
 	@MapsId("memberId")
 	private Member member;
 
-	@CreatedDate
 	private LocalDateTime likedAt;
 }

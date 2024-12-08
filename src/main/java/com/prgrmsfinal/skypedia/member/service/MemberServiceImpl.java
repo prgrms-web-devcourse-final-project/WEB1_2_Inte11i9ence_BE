@@ -133,14 +133,14 @@ public class MemberServiceImpl implements MemberService{
             session.enableFilter("withdrawnFilter");
         }
     }
-    
+
     @Override
     public boolean checkExistsByUsername(String username) {
-      return memberRepository.existsByUsername(username);
+        return memberRepository.existsByUsername(username);
     }
 
     @Override
     public Member getByUsername(String username) {
-      return memberRepository.findByUsername(username).orElse(null);
+        return memberRepository.findByUsername(username).orElse(null);
     }
 }
