@@ -6,6 +6,6 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class PhotoTaskException extends RuntimeException {
-    private int code;
-    private String message;
+	private int code;
+	private String message;
 }

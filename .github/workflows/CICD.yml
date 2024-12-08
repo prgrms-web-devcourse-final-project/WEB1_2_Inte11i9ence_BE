@@ -15,10 +15,12 @@ jobs:
       - name: Add secrets into properties
         run: |
           echo "${{ secrets.APPLICATION_PROD }}" | base64 --decode > ./src/main/resources/application-prod.properties
+
       # 3. Docker 이미지 빌드
       - name: Build Docker Image
         run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/spring-ubuntu-app:latest .
+
       # 4. application-prod.properties 빌드 후 제거하기
       - name: Clean up application-prod.properties
         run: rm ./src/main/resources/application-prod.properties
