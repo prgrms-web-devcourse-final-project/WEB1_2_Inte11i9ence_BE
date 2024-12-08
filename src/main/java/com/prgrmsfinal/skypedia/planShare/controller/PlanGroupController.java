@@ -99,9 +99,9 @@ public class PlanGroupController {
 	@GetMapping("/{id}/reply")
 	@ResponseStatus(HttpStatus.OK)
 	public ReplyResponseDTO.ReadAll readReplies(Authentication authentication
-		, @PathVariable @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long planGroupId
-		, @RequestParam(name = "lastidx", defaultValue = "0") Long lastId) {
-		return planGroupService.readReplies(authentication, planGroupId, lastId);
+		, @PathVariable @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long id
+		, @RequestParam(name = "lastidx", defaultValue = "0", required = false) Long lastId) {
+		return planGroupService.readReplies(authentication, id, lastId);
 	}
 
 	@Operation(
@@ -132,12 +132,12 @@ public class PlanGroupController {
 		return ResponseEntity.status(HttpStatus.CREATED).build();
 	}
 
-	@PostMapping("/post/{postId}/reply")
+	@PostMapping("/{id}/reply")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void createReply(Authentication authentication,
-		@PathVariable("planGroupId") @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long planGroupId,
+		@PathVariable @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long id,
 		@Valid @RequestBody PlanGroupRequestDTO.CreateReply groupCreateReply) {
-		planGroupService.createReply(authentication, planGroupId, groupCreateReply);
+		planGroupService.createReply(authentication, id, groupCreateReply);
 	}
 
 	@Operation(
@@ -166,8 +166,8 @@ public class PlanGroupController {
 	@PostMapping("/{id}/likes")
 	@ResponseStatus(HttpStatus.OK)
 	public PlanGroupResponseDTO.ToggleLikes toggleLikes(Authentication authentication,
-		@PathVariable @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long planGroupId) {
-		return planGroupService.toggleLikes(authentication, planGroupId);
+		@PathVariable @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long id) {
+		return planGroupService.toggleLikes(authentication, id);
 	}
 
 	@Operation(
@@ -196,8 +196,8 @@ public class PlanGroupController {
 	@PostMapping("/{id}/scrap")
 	@ResponseStatus(HttpStatus.OK)
 	public Map<String, Boolean> toggleScrap(Authentication authentication,
-		@PathVariable @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long planGroupId) {
-		return Map.of("scraped", planGroupService.toggleScrap(authentication, planGroupId));
+		@PathVariable @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long id) {
+		return Map.of("scraped", planGroupService.toggleScrap(authentication, id));
 	}
 
 	@Operation(
@@ -282,16 +282,15 @@ public class PlanGroupController {
 	@ResponseStatus(HttpStatus.OK)
 	public PlanGroupResponseDTO.ReadAll readByRegion(
 		@PathVariable("regionName") String regionName,
-		@RequestParam(name = "lastidx", defaultValue = "0") Long lastPlanGroupId) {
+		@RequestParam(name = "lastidx", defaultValue = "0", required = false) Long lastPlanGroupId) {
 		return planGroupService.readByRegion(regionName, lastPlanGroupId);
 	}
 
 	// 회원별 게시물 조회
 	@GetMapping("/{username}")
 	@ResponseStatus(HttpStatus.OK)
-	public PlanGroupResponseDTO.ReadAll readByMember(Authentication authentication,
-		@PathVariable("username") String username,
-		@RequestParam(name = "lastidx", defaultValue = "0") Long lastPlanGroupId) {
+	public PlanGroupResponseDTO.ReadAll readByMember(@PathVariable("username") String username,
+		@RequestParam(name = "lastidx", defaultValue = "0", required = false) Long lastPlanGroupId) {
 		return planGroupService.readByMember(username, lastPlanGroupId);
 	}
 
@@ -299,9 +298,9 @@ public class PlanGroupController {
 	@GetMapping("/search")
 	@ResponseStatus(HttpStatus.OK)
 	public PlanGroupResponseDTO.ReadAll search(@RequestParam("keyword") String keyword,
-		@RequestParam("target") String target,
-		@RequestParam("lastrev") String cursor,
-		@RequestParam(name = "lastidx", defaultValue = "0") Long lastPlanGroupId) {
+		@RequestParam(name = "target", required = false) String target,
+		@RequestParam(name = "lastrev", required = false) String cursor,
+		@RequestParam(name = "lastidx", defaultValue = "0", required = false) Long lastPlanGroupId) {
 		return planGroupService.search(keyword, target, cursor, lastPlanGroupId);
 	}
 }

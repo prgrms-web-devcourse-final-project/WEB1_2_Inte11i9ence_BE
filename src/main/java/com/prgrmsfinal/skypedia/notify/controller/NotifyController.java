@@ -36,7 +36,8 @@ public class NotifyController {
 
 	@GetMapping
 	@ResponseStatus(HttpStatus.OK)
-	public List<NotifyResponseDTO.Send> readAll(Authentication authentication, @RequestParam("read") boolean read) {
+	public List<NotifyResponseDTO.Send> readAll(Authentication authentication,
+		@RequestParam(value = "read", required = false, defaultValue = "false") boolean read) {
 		return notifyService.readAll(authentication, read);
 	}
 

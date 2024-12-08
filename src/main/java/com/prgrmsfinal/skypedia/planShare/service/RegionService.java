@@ -7,7 +7,7 @@ import com.prgrmsfinal.skypedia.planShare.dto.RegionDTO;
 import com.prgrmsfinal.skypedia.planShare.entity.Region;
 
 public interface RegionService {
-	List<RegionDTO> readAll(RegionDTO regionDTO);
+	List<RegionDTO> readAll();
 
 	RegionDTO read(Long id);
 

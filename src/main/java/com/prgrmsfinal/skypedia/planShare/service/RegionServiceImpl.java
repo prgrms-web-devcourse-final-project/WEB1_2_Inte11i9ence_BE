@@ -21,7 +21,7 @@ public class RegionServiceImpl implements RegionService {
 	private final RegionRepository regionRepository;
 
 	@Override
-	public List<RegionDTO> readAll(RegionDTO regionDTO) {
+	public List<RegionDTO> readAll() {
 		List<Region> regions = regionRepository.findAll();
 		return regions.stream().map(this::entityToDto).collect(Collectors.toList());
 	}
