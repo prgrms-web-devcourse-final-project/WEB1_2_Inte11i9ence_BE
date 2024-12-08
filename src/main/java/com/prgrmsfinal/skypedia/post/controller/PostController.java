@@ -38,7 +38,6 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1")
-@Validated
 @Tag(name = "게시글 API 컨트롤러", description = "게시글과 관련된 REST API를 제공하는 컨트롤러입니다.")
 public class PostController {
 	private final PostService postService;
