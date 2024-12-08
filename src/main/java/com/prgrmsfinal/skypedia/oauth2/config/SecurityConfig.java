@@ -51,8 +51,7 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/login/oauth2/code/**", "/oauth2/authorization/**",
 								"/error", "/login", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**",
-								"/webjars/**", "/actuator/**",
-								"/api/v1/").permitAll()
+								"/webjars/**", "/actuator/**").permitAll()
 						.requestMatchers(HttpMethod.GET,
 								"/api/v1/posts","/api/v1/plan-group","/api/v1/notify",
 								"/api/v1/post-category","/api/v1/plan-detail**",
