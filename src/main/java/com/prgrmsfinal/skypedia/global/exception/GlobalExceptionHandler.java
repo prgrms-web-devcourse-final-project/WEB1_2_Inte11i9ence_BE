@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.beans.TypeMismatchException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -57,5 +58,11 @@ public class GlobalExceptionHandler {
 	public ErrorResponseDTO.Valid handleTypeMismatchException(TypeMismatchException e) {
 		return new ErrorResponseDTO.Valid(HttpStatus.BAD_REQUEST, "필드 타입에 위배되는 값을 감지했습니다.",
 			Map.of("field", e.getPropertyName(), "message", "필드 타입에 맞게 값을 수정해주세요."));
+	}
+
+	@ExceptionHandler(DataIntegrityViolationException.class)
+	@ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+	public Map<String, Object> handleDataIntegrityViolationException(DataIntegrityViolationException e) {
+		return Map.of("status", HttpStatus.INTERNAL_SERVER_ERROR, "message", "서버 내부에서 에러가 발생했습니다. 관라자에게 문의하세요.");
 	}
 }

@@ -40,8 +40,10 @@ public class Photo {
 	@Column(name = "s3_filekey", nullable = false, unique = true)
 	private String s3FileKey;
 
+	@Column(insertable = false, updatable = false)
 	private LocalDateTime createdAt;
 
+	@Column(insertable = false, updatable = false)
 	private LocalDateTime updatedAt;
 
 	@PrePersist
