@@ -2,9 +2,7 @@ package com.prgrmsfinal.skypedia.reply.entity;
 
 import java.time.LocalDateTime;
 
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-
+import com.prgrmsfinal.skypedia.global.entity.BaseTime;
 import com.prgrmsfinal.skypedia.member.entity.Member;
 
 import jakarta.persistence.Entity;
@@ -24,7 +22,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-public class Reply {
+public class Reply extends BaseTime {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -45,12 +43,6 @@ public class Reply {
 
 	@Builder.Default
 	private boolean deleted = false;
-
-	@CreatedDate
-	private LocalDateTime createdAt;
-
-	@LastModifiedDate
-	private LocalDateTime updatedAt;
 
 	private LocalDateTime deletedAt;
 

@@ -4,14 +4,10 @@ import java.time.LocalDateTime;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-
 import com.prgrmsfinal.skypedia.global.entity.BaseTime;
 import com.prgrmsfinal.skypedia.member.entity.Member;
 
 import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -39,23 +35,21 @@ public class PlanGroup extends BaseTime {
 	private Long id;                    // 일정 그룹 ID
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "member_id", nullable = false)
+	@JoinColumn(name = "member_id")
 	private Member member;              // 해당 게시물의 회원 ID
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "region_id", nullable = false)
+	@JoinColumn(name = "region_id")
 	private Region region;              // 일정의 지역 ID
 
 	@OneToMany(mappedBy = "planGroup", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	private List<PlanDetail> planDetails = new LinkedList<>();  // 세부 일정
 
-	@Column(length = 20, nullable = false, columnDefinition = "TEXT")
 	private String title;               // 일정 제목
 
-	@Column(nullable = false)
 	private String groupImage;          // 일정 대표 이미지
 
-	@Column(nullable = false)
+	@Builder.Default
 	private Long views = 0L;             // 조회수
 
 	@Builder.Default
@@ -63,12 +57,6 @@ public class PlanGroup extends BaseTime {
 
 	@Builder.Default
 	private Boolean deleted = false;     // 논리 삭제 여부
-
-	@CreatedDate
-	private LocalDateTime createdAt;    // 게시물 생성 일자
-
-	@LastModifiedDate
-	private LocalDateTime updatedAt;    // 게시물 수정 일자
 
 	private LocalDateTime deletedAt;    // 게시물 삭제 일자
 
