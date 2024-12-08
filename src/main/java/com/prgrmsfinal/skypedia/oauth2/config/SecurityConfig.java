@@ -53,10 +53,12 @@ public class SecurityConfig {
 								"/error", "/login", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**",
 								"/webjars/**", "/actuator/**",
 								"/api/v1/").permitAll()
-						.requestMatchers(HttpMethod.GET,"/api/v1/region",
-								"/api/v1/posts","/api/v1/plan-group",
-								"/api/v1/photo","/api/v1/notify",
-								"/api/v1/post-category").permitAll()
+						.requestMatchers(HttpMethod.GET,
+								"/api/v1/posts","/api/v1/plan-group","/api/v1/notify",
+								"/api/v1/post-category","/api/v1/plan-detail**",
+								"/api/v1/region**","/api/v1/plan-group**",
+								"/api/v1/member/{username}","/api/v1/post**",
+								"/api/v1/reply**","/api/v1/photo**").permitAll()
 						.anyRequest().authenticated())
 				.oauth2Login(oauth2 -> oauth2
 						.successHandler((request, response, authentication) -> {

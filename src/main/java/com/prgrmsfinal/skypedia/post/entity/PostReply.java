@@ -2,8 +2,6 @@ package com.prgrmsfinal.skypedia.post.entity;
 
 import java.time.LocalDateTime;
 
-import org.springframework.data.annotation.CreatedDate;
-
 import com.prgrmsfinal.skypedia.post.entity.key.PostReplyId;
 import com.prgrmsfinal.skypedia.reply.entity.Reply;
 
@@ -33,6 +31,5 @@ public class PostReply {
 	@MapsId("replyId")
 	private Reply reply;
 
-	@CreatedDate
 	private LocalDateTime repliedAt;
 }

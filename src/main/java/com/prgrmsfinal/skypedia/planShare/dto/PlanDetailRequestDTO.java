@@ -12,11 +12,9 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
 public class PlanDetailRequestDTO {
 	@Getter
-	@Setter
 	@AllArgsConstructor
 	@Schema(title = "세부 일정 DTO", description = "일정 그룹 게시물에 포함되는 세부 일정 DTO입니다.")
 	public static class Create {

@@ -24,6 +24,8 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 
 @Tag(name = "지역 카테고리 API 컨트롤러", description = "지역 카테고리와 관련된 REST API를 제공하는 컨트롤러입니다.")
@@ -51,7 +53,7 @@ public class RegionController {
 	)
 	@GetMapping
 	@ResponseStatus(HttpStatus.OK)
-	public List<RegionDTO> readAll(RegionDTO regionDTO) {
+	public List<RegionDTO> readAll(@Valid @RequestBody RegionDTO regionDTO) {
 		return regionService.readAll(regionDTO);
 	}
 
@@ -80,7 +82,7 @@ public class RegionController {
 	)
 	@GetMapping("/{id}")
 	@ResponseStatus(HttpStatus.OK)
-	public RegionDTO read(@PathVariable("id") Long id) {
+	public RegionDTO read(@PathVariable("id") @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long id) {
 		return regionService.read(id);
 	}
 
@@ -101,7 +103,7 @@ public class RegionController {
 		}
 	)
 	@PostMapping
-	public ResponseEntity<RegionDTO> create(@RequestBody RegionDTO regionDTO) {
+	public ResponseEntity<RegionDTO> create(@Valid @RequestBody RegionDTO regionDTO) {
 		RegionDTO createdRegion = regionService.register(regionDTO);
 		return ResponseEntity.status(HttpStatus.CREATED).body(createdRegion);
 	}
@@ -136,7 +138,8 @@ public class RegionController {
 	)
 	@PutMapping("/{id}")
 	@ResponseStatus(HttpStatus.OK)
-	public RegionDTO update(@PathVariable Long id, @RequestBody RegionDTO regionDTO) {
+	public RegionDTO update(@PathVariable @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long id,
+		@Valid @RequestBody RegionDTO regionDTO) {
 		regionDTO.setId(id);
 		return regionService.update(regionDTO);
 	}
@@ -171,7 +174,7 @@ public class RegionController {
 	)
 	@DeleteMapping("/{id}")
 	@ResponseStatus(HttpStatus.OK)
-	public Map<String, String> delete(@PathVariable("id") Long id) {
+	public Map<String, String> delete(@PathVariable("id") @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long id) {
 		regionService.delete(id);
 		return Map.of("message", "삭제 완료");
 	}

@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS plan_group
     id          BIGINT AUTO_INCREMENT PRIMARY KEY,
     member_id   BIGINT       NOT NULL,
     region_id   BIGINT       NOT NULL,
-    title       VARCHAR(255) NOT NULL,
+    title       VARCHAR(20)  NOT NULL,
     group_image VARCHAR(255) NOT NULL,
     views       BIGINT       NOT NULL DEFAULT '0',
     likes       BIGINT       NOT NULL DEFAULT '0',
@@ -109,7 +109,8 @@ CREATE TABLE IF NOT EXISTS plan_detail
     created_at    TIMESTAMP             DEFAULT CURRENT_TIMESTAMP,
     updated_at    TIMESTAMP             DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at    TIMESTAMP    NULL,
-    FOREIGN KEY (plan_group_id) REFERENCES plan_group (id)
+    FOREIGN KEY (plan_group_id) REFERENCES plan_group (id),
+    INDEX idx_plan_detail_location (latitude, longitude)
 );
 
 CREATE TABLE IF NOT EXISTS reply

@@ -1,13 +1,19 @@
 package com.prgrmsfinal.skypedia.global.exception;
 
+import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import jakarta.validation.ConstraintViolation;
+import com.prgrmsfinal.skypedia.global.dto.ErrorResponseDTO;
+
 import jakarta.validation.ConstraintViolationException;
 
 @RestControllerAdvice
@@ -18,9 +24,38 @@ public class GlobalExceptionHandler {
 	}
 
 	@ExceptionHandler(ConstraintViolationException.class)
-	public ResponseEntity<Map<String, Object>> handleConstraintViolationException(ConstraintViolationException e) {
-		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("status", HttpStatus.BAD_REQUEST
-			, "message", "잘못된 요청 데이터가 발견되었습니다."
-			, "details", e.getConstraintViolations().stream().map(ConstraintViolation::getMessage).toList()));
+	@ResponseStatus(HttpStatus.BAD_REQUEST)
+	public ErrorResponseDTO.Valid handleConstraintViolationException(ConstraintViolationException e) {
+		Map<String, String> details = new HashMap<>();
+
+		e.getConstraintViolations().forEach(violation -> {
+			String fieldName = violation.getPropertyPath().toString();
+			String message = violation.getMessage();
+			details.put(fieldName, message);
+		});
+
+		return new ErrorResponseDTO.Valid(HttpStatus.BAD_REQUEST, "잘못된 요청 파라미터가 감지되었습니다.", details);
+	}
+
+	@ExceptionHandler(MethodArgumentNotValidException.class)
+	@ResponseStatus(HttpStatus.BAD_REQUEST)
+	public ErrorResponseDTO.Valid handleMethodArgumentNotValidException(
+		MethodArgumentNotValidException e) {
+		Map<String, String> details = new HashMap<>();
+
+		e.getBindingResult().getAllErrors().forEach(error -> {
+			String field = ((FieldError)error).getField();
+			String message = error.getDefaultMessage();
+			details.put(field, message);
+		});
+
+		return new ErrorResponseDTO.Valid(HttpStatus.BAD_REQUEST, "잘못된 요청 데이터가 감지되었습니다.", details);
+	}
+
+	@ExceptionHandler(TypeMismatchException.class)
+	@ResponseStatus(HttpStatus.BAD_REQUEST)
+	public ErrorResponseDTO.Valid handleTypeMismatchException(TypeMismatchException e) {
+		return new ErrorResponseDTO.Valid(HttpStatus.BAD_REQUEST, "필드 타입에 위배되는 값을 감지했습니다.",
+			Map.of("field", e.getPropertyName(), "message", "필드 타입에 맞게 값을 수정해주세요."));
 	}
 }

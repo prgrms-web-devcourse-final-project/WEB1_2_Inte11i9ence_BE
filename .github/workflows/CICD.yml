@@ -38,12 +38,12 @@ jobs:
 
 
   deploy:
-    needs: [build-push]  # build와 push-image Job이 완료된 후 실행
+    needs: [ build-push ]  # build와 push-image Job이 완료된 후 실행
     runs-on: self-hosted  # Self-hosted Runner 사용
-    
+
     env:
       PROJECT_NAME: "spring-ubuntu-app"
-    
+
     steps:
       # 1. Docker Hub 로그인하기
       - name: Log in to Docker Hub
@@ -51,22 +51,22 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      
+
       # 2. Docker 이미지 Pull
       - name: Pull Docker Image
         run: sudo docker pull ${{ secrets.DOCKER_USERNAME }}/${{ env.PROJECT_NAME }}
-      
+
       # 3. 기존 컨테이너 중지
       - name: Stop Old Container
         run: sudo docker stop ${{ env.PROJECT_NAME }} || true
-      
+
       # 4. 기존 컨테이너 삭제
       - name: Remove Old Container
         run: sudo docker rm ${{ env.PROJECT_NAME }} || true
       #네트워크 통신 설정
       - name: fucking network
         run: docker network create my-network || true
-      
+
       #redis 실행
       - name: Run Redis Container
         run: |
@@ -75,7 +75,7 @@ jobs:
       # 5. 새 컨테이너 실행
       - name: Run New Container and rout
         run: docker run -d --name spring-ubuntu-app --network my-network -p 8080:8080 ${{ secrets.DOCKER_USERNAME }}/spring-ubuntu-app:latest
-      
+
       # 6. 오래된 이미지 삭제
       - name: Remove Old Images
         run: sudo docker image prune -a -f || true
