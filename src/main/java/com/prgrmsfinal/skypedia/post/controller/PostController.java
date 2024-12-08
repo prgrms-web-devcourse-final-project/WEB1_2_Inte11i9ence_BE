@@ -3,13 +3,10 @@ package com.prgrmsfinal.skypedia.post.controller;
 import java.util.List;
 import java.util.Map;
 
-import com.prgrmsfinal.skypedia.member.entity.Member;
-import com.prgrmsfinal.skypedia.member.service.MemberService;
-import com.prgrmsfinal.skypedia.oauth2.jwt.CustomUserDetails;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -34,15 +31,17 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1")
+@Validated
 @Tag(name = "게시글 API 컨트롤러", description = "게시글과 관련된 REST API를 제공하는 컨트롤러입니다.")
 public class PostController {
 	private final PostService postService;
-	private final MemberService memberService;
 
 	@Operation(
 		summary = "게시글 단일 조회",
@@ -69,7 +68,8 @@ public class PostController {
 	)
 	@GetMapping("/post/{postId}")
 	@ResponseStatus(HttpStatus.OK)
-	public PostResponseDTO.Read read(Authentication authentication, @PathVariable Long postId) {
+	public PostResponseDTO.Read read(Authentication authentication,
+		@PathVariable @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long postId) {
 		return postService.read(authentication, postId);
 	}
 
@@ -98,7 +98,8 @@ public class PostController {
 	)
 	@GetMapping("/post/{postId}/reply")
 	@ResponseStatus(HttpStatus.OK)
-	public ReplyResponseDTO.ReadAll readReplies(Authentication authentication, @PathVariable Long postId
+	public ReplyResponseDTO.ReadAll readReplies(Authentication authentication,
+		@PathVariable @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long postId
 		, @RequestParam(name = "lastidx", defaultValue = "0") Long lastId) {
 		return postService.readReplies(authentication, postId, lastId);
 	}
@@ -200,7 +201,7 @@ public class PostController {
 		}
 	)
 	@PostMapping("/post")
-	public ResponseEntity<?> create(Authentication authentication, PostRequestDTO.Create request) {
+	public ResponseEntity<?> create(Authentication authentication, @Valid @RequestBody PostRequestDTO.Create request) {
 		List<String> uploadUrls = postService.create(authentication, request);
 
 		if (uploadUrls.isEmpty()) {
@@ -209,22 +210,12 @@ public class PostController {
 
 		return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("uploadUrls", uploadUrls));
 	}
-//	@PostMapping("/post")
-//	public ResponseEntity<?> create(@AuthenticationPrincipal CustomUserDetails userDetails,
-//									@RequestBody PostRequestDTO.Create request) {
-//		List<String> uploadUrls = postService.create(userDetails.getId(), request);
-//
-//		if (uploadUrls.isEmpty()) {
-//			return ResponseEntity.status(HttpStatus.CREATED).build();
-//		}
-//
-//		return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("uploadUrls", uploadUrls));
-//	}
 
 	@PostMapping("/post/{postId}/reply")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public void createReply(Authentication authentication, @PathVariable("postId") Long postId,
-		PostRequestDTO.CreateReply request) {
+	public void createReply(Authentication authentication,
+		@PathVariable("postId") @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long postId,
+		@Valid @RequestBody PostRequestDTO.CreateReply request) {
 		postService.createReply(authentication, postId, request);
 	}
 
@@ -253,7 +244,8 @@ public class PostController {
 	)
 	@PostMapping("/post/{postId}/likes")
 	@ResponseStatus(HttpStatus.OK)
-	public PostResponseDTO.ToggleLikes toggleLikes(Authentication authentication, @PathVariable Long postId) {
+	public PostResponseDTO.ToggleLikes toggleLikes(Authentication authentication,
+		@PathVariable @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long postId) {
 		return postService.toggleLikes(authentication, postId);
 	}
 
@@ -282,7 +274,8 @@ public class PostController {
 	)
 	@PostMapping("/post/{postId}/scrap")
 	@ResponseStatus(HttpStatus.OK)
-	public Map<String, Boolean> toggleScrap(Authentication authentication, @PathVariable Long postId) {
+	public Map<String, Boolean> toggleScrap(Authentication authentication,
+		@PathVariable @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long postId) {
 		return Map.of("scraped", postService.toggleScrap(authentication, postId));
 	}
 
@@ -315,8 +308,9 @@ public class PostController {
 		schema = @Schema(type = "integer", minimum = "1")
 	)
 	@PutMapping("/post/{postId}")
-	public ResponseEntity<?> modify(Authentication authentication, @PathVariable Long postId,
-		@RequestBody PostRequestDTO.Modify request) {
+	public ResponseEntity<?> modify(Authentication authentication,
+		@PathVariable @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long postId,
+		@Valid @RequestBody PostRequestDTO.Modify request) {
 		List<String> uploadUrls = postService.modify(authentication, postId, request);
 
 		if (uploadUrls.isEmpty()) {
@@ -356,7 +350,8 @@ public class PostController {
 	)
 	@DeleteMapping("/post/{postId}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public void delete(Authentication authentication, @PathVariable Long postId) {
+	public void delete(Authentication authentication,
+		@PathVariable @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long postId) {
 		postService.delete(authentication, postId);
 	}
 
@@ -390,7 +385,8 @@ public class PostController {
 	)
 	@PatchMapping("/post/{postId}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public void restore(Authentication authentication, @PathVariable Long postId) {
+	public void restore(Authentication authentication,
+		@PathVariable @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long postId) {
 		postService.restore(authentication, postId);
 	}
 }

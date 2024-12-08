@@ -2,8 +2,6 @@ package com.prgrmsfinal.skypedia.planShare.entity;
 
 import java.time.LocalDateTime;
 
-import org.springframework.data.annotation.CreatedDate;
-
 import com.prgrmsfinal.skypedia.member.entity.Member;
 import com.prgrmsfinal.skypedia.planShare.entity.key.PlanGroupScrapId;
 
@@ -32,7 +30,6 @@ public class PlanGroupScrap {
 	@ManyToOne
 	@MapsId("memberId")
 	private Member member;
-	
-	@CreatedDate
+
 	private LocalDateTime scrapedAt;
 }

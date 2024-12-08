@@ -6,6 +6,7 @@ import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,12 +30,15 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 
 @Tag(name = "일정 공유 게시판 API 컨트롤러", description = "일정 공유 게시판과 관련된 REST API를 제공하는 컨트롤러입니다.")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/plan-group")
+@Validated
 public class PlanGroupController {
 	private final PlanGroupService planGroupService;
 	private final PlanGroupRepository planGroupRepository;
@@ -58,7 +62,7 @@ public class PlanGroupController {
 	@GetMapping
 	@ResponseStatus(HttpStatus.OK)
 	public List<PlanGroupResponseDTO.Info> readAll(Authentication authentication,
-		PlanGroupResponseDTO.ReadAll groupReadALL) {
+		@Valid @RequestBody PlanGroupResponseDTO.ReadAll groupReadALL) {
 		return planGroupService.readAll(authentication, groupReadALL);
 	}
 
@@ -87,13 +91,15 @@ public class PlanGroupController {
 	)
 	@GetMapping("/{id}")
 	@ResponseStatus(HttpStatus.OK)
-	public PlanGroupResponseDTO.Read read(Authentication authentication, @PathVariable("id") Long id) {
+	public PlanGroupResponseDTO.Read read(Authentication authentication,
+		@PathVariable @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long id) {
 		return planGroupService.read(authentication, id);
 	}
 
 	@GetMapping("/{id}/reply")
 	@ResponseStatus(HttpStatus.OK)
-	public ReplyResponseDTO.ReadAll readReplies(Authentication authentication, @PathVariable Long planGroupId
+	public ReplyResponseDTO.ReadAll readReplies(Authentication authentication
+		, @PathVariable @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long planGroupId
 		, @RequestParam(name = "lastidx", defaultValue = "0") Long lastId) {
 		return planGroupService.readReplies(authentication, planGroupId, lastId);
 	}
@@ -117,7 +123,7 @@ public class PlanGroupController {
 	@PostMapping
 	public ResponseEntity<?> create(
 		Authentication authentication,
-		@RequestBody PlanGroupRequestDTO.Create groupCreate) {
+		@Valid @RequestBody PlanGroupRequestDTO.Create groupCreate) {
 		List<String> thumbnailUrl = planGroupService.create(authentication, groupCreate);
 
 		if (thumbnailUrl.isEmpty()) {
@@ -128,8 +134,9 @@ public class PlanGroupController {
 
 	@PostMapping("/post/{postId}/reply")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public void createReply(Authentication authentication, @PathVariable("planGroupId") Long planGroupId,
-		PlanGroupRequestDTO.CreateReply groupCreateReply) {
+	public void createReply(Authentication authentication,
+		@PathVariable("planGroupId") @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long planGroupId,
+		@Valid @RequestBody PlanGroupRequestDTO.CreateReply groupCreateReply) {
 		planGroupService.createReply(authentication, planGroupId, groupCreateReply);
 	}
 
@@ -158,7 +165,8 @@ public class PlanGroupController {
 	)
 	@PostMapping("/{id}/likes")
 	@ResponseStatus(HttpStatus.OK)
-	public PlanGroupResponseDTO.ToggleLikes toggleLikes(Authentication authentication, @PathVariable Long planGroupId) {
+	public PlanGroupResponseDTO.ToggleLikes toggleLikes(Authentication authentication,
+		@PathVariable @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long planGroupId) {
 		return planGroupService.toggleLikes(authentication, planGroupId);
 	}
 
@@ -187,7 +195,8 @@ public class PlanGroupController {
 	)
 	@PostMapping("/{id}/scrap")
 	@ResponseStatus(HttpStatus.OK)
-	public Map<String, Boolean> toggleScrap(Authentication authentication, @PathVariable Long planGroupId) {
+	public Map<String, Boolean> toggleScrap(Authentication authentication,
+		@PathVariable @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long planGroupId) {
 		return Map.of("scraped", planGroupService.toggleScrap(authentication, planGroupId));
 	}
 
@@ -220,8 +229,9 @@ public class PlanGroupController {
 		schema = @Schema(type = "integer")
 	)
 	@PutMapping("/{id}")
-	public ResponseEntity<?> update(Authentication authentication, @PathVariable("id") Long id,
-		@RequestBody PlanGroupRequestDTO.Update groupUpdate) {
+	public ResponseEntity<?> update(Authentication authentication,
+		@PathVariable("id") @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long id,
+		@Valid @RequestBody PlanGroupRequestDTO.Update groupUpdate) {
 		List<String> groupImageUrl = planGroupService.update(authentication, id, groupUpdate);
 
 		if (groupImageUrl.isEmpty()) {
@@ -262,7 +272,8 @@ public class PlanGroupController {
 	)
 	@DeleteMapping("/{id}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public void delete(Authentication authentication, @PathVariable("id") Long id) {
+	public void delete(Authentication authentication,
+		@PathVariable("id") @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long id) {
 		planGroupService.delete(authentication, id);
 	}
 
