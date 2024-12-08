@@ -11,6 +11,10 @@ RUN apt-get update && apt-get install -y \
     && ln -s /opt/gradle-8.4/bin/gradle /usr/bin/gradle \
     && apt-get clean
 
+RUN apt-get update && apt-get install -y locales
+RUN locale-gen ko_KR.UTF-8
+ENV LC_ALL ko_KR.UTF-8
+
 # 3. 작업 디렉토리 설정
 WORKDIR /app
 

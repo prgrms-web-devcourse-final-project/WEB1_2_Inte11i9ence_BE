@@ -18,5 +18,11 @@ public class PhotoRequestDTO {
 		@Schema(title = "파일 타입", description = "사진 파일의 파일 타입입니다.", example = "image/jpeg")
 		@Pattern(regexp = "^image\\/(jpg|jpeg|png|gif|bmp|webp|svg|)$", message = "파일 타입이 올바르지 않습니다.")
 		private final String contentType;
+
+		public String getOriginalFileName() {
+			return originalFilename;
+		}
+
+		;
 	}
 }
