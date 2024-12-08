@@ -278,7 +278,7 @@ public class PlanGroupController {
 	}
 
 	// 지역별 게시물 조회
-	@GetMapping("/{regionName}")
+	@GetMapping("/region/{regionName}")
 	@ResponseStatus(HttpStatus.OK)
 	public PlanGroupResponseDTO.ReadAll readByRegion(
 		@PathVariable("regionName") String regionName,
