@@ -48,6 +48,11 @@ dependencies {
 
     implementation 'org.springframework.boot:spring-boot-starter-data-redis:3.3.5'
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.18.2'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.2'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.2'
+    implementation 'com.fasterxml.jackson.module:jackson-module-parameter-names:2.18.2'
 }
 
 tasks.named('test') {
