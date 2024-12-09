@@ -18,10 +18,18 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Table(name = "select_post")
 public class SelectPost {
 
@@ -39,15 +47,20 @@ public class SelectPost {
 	@Column(nullable = false)
 	private boolean deleted = false; // 삭제 여부
 
+	@Builder.Default
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt = LocalDateTime.now();
 
+	@Builder.Default
 	@Column(name = "updated_at", nullable = false)
 	private LocalDateTime updatedAt = LocalDateTime.now();
 
+	@Builder.Default
 	@Column(name = "deleted_at")
-	private LocalDateTime deletedAt;
+	private LocalDateTime deletedAt = null;
 
+	@Builder.Default
 	@OneToMany(mappedBy = "selectPost", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<SelectPostPhoto> photos = new ArrayList<>();
+
 }

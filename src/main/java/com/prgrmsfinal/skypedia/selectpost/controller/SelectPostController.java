@@ -1,5 +1,7 @@
 package com.prgrmsfinal.skypedia.selectpost.controller;
 
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.prgrmsfinal.skypedia.photo.dto.PhotoResponseDTO;
 import com.prgrmsfinal.skypedia.selectpost.dto.SelectPostRequestDto;
 import com.prgrmsfinal.skypedia.selectpost.dto.SelectPostResponseDto;
 import com.prgrmsfinal.skypedia.selectpost.service.SelectPostService;
@@ -18,13 +21,13 @@ import com.prgrmsfinal.skypedia.selectpost.service.SelectPostService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/v1/select-posts")
+@RequestMapping("/api/v1/select-post")
 @RequiredArgsConstructor
 public class SelectPostController {
 
 	private final SelectPostService selectPostService;
 
-	@GetMapping
+	@GetMapping()
 	public ResponseEntity<SelectPostResponseDto.ListResponse> getAllSelectPosts(
 		@RequestParam(defaultValue = "10") int size
 	) {
@@ -41,11 +44,11 @@ public class SelectPostController {
 	}
 
 	@PostMapping
-	public ResponseEntity<SelectPostResponseDto> createSelectPost(
+	public ResponseEntity<List<PhotoResponseDTO.Info>> createSelectPost(
 		@RequestBody SelectPostRequestDto requestDto,
 		@RequestParam Long memberId
 	) {
-		SelectPostResponseDto response = selectPostService.createSelectPost(memberId, requestDto);
+		List<PhotoResponseDTO.Info> response = selectPostService.createSelectPost(memberId, requestDto);
 		return ResponseEntity.ok(response);
 	}
 

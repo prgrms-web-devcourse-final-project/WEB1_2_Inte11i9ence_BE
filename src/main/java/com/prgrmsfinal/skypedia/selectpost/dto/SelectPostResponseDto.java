@@ -26,4 +26,9 @@ public class SelectPostResponseDto {
 		private boolean hasNext;
 		private Long lastId;
 	}
+
+	public static class OneInfoResponse {
+		private Long selectPostId;
+
+	}
 }

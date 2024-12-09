@@ -36,33 +36,15 @@ public class PhotoServiceImpl implements PhotoService {
 
 	// ---------------------------------- CREATE ----------------------------------
 
-	//하나의 URL create요청 <- 솔직히 필요없는듯
 	@Override
-	public String createPhotoURL(PhotoDTO photoDTO) {
-		String uuid = UUID.randomUUID().toString();
-		if (checkContentType(photoDTO)) {
-			List<Photo> photo = new ArrayList<>();
-			photo.add(Photo.builder()
-				.contentType(photoDTO.getContentType().toString().toLowerCase())
-				.originalFileName(photoDTO.getOriginalFileName())
-				.uuid(uuid)
-				.s3FileKey("test/" + uuid)
-				.build());
+	public List<PhotoResponseDTO.Info> createPhotoUrlList(List<PhotoRequestDTO.Upload> photoDTOs) {
+		List<PhotoResponseDTO.Info> photoResponseInfos = new ArrayList<>();
 
-			photoRepository.saveAll(photo);
-		}
-
-		return s3Service.createPresignedURL("test/" + uuid);
-	}
-
-	// 여러개의 URL create요청
-	@Override
-	public List<String> createPhotoUrlList(List<PhotoDTO> photoDTOs) {
-		List<String> photoUrls = new ArrayList<>();
-
-		for (PhotoDTO photoDTO : photoDTOs) {
+		// dto에 담긴 값을 하나씩 반복.
+		for (PhotoRequestDTO.Upload photoDTO : photoDTOs) {
 			String uuid = UUID.randomUUID().toString();
 
+			// 타입체크
 			if (checkContentType(photoDTO)) {
 				// Photo 객체 생성
 				Photo photo = Photo.builder()
@@ -73,26 +55,22 @@ public class PhotoServiceImpl implements PhotoService {
 					.build();
 
 				// DB 저장
-				photoRepository.save(photo);
+				Photo savedPhoto = photoRepository.save(photo);
+
+				PhotoResponseDTO.Info photoInfo = PhotoResponseDTO.Info.builder()
+					.id(savedPhoto.getId())
+					.photoUrl(s3Service.createPresignedURL("test/" + uuid))
+					.build();
 
 				// S3 URL 생성
-				photoUrls.add(s3Service.createPresignedURL("test/" + uuid));
+				photoResponseInfos.add(photoInfo);
 			}
 		}
 
-		return photoUrls;
+		return photoResponseInfos;
 	}
 
 	// ------------------------------------ READ --------------------------------------
-
-	// 한개의 read요청 <- 솔직히 필요없는듯
-	@Override
-	public String readPhotoURL(Long photoId) {
-		if (photoId == null) {
-			throw PhotoException.NOT_FOUND.get();
-		}
-		return s3Service.getPresignedUrl(photoRepository.findS3FileKeyById(photoId));
-	}
 
 	// 여러개의 read요청 List로 id받기
 	@Override
@@ -193,7 +171,7 @@ public class PhotoServiceImpl implements PhotoService {
 	// --------------------------- CHECKCONTENTTYPE -------------------------------
 
 	@Override
-	public boolean checkContentType(PhotoDTO photoDTO) {
+	public boolean checkContentType(PhotoRequestDTO.Upload photoDTO) {
 		var cont = photoDTO.getContentType().toString().toLowerCase();
 
 		List<String> allowedTypes = Arrays.asList(
