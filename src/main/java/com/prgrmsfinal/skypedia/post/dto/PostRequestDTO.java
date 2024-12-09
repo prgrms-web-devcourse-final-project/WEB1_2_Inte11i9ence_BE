@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.hibernate.validator.constraints.Length;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.prgrmsfinal.skypedia.photo.dto.PhotoRequestDTO;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -50,7 +52,6 @@ public class PostRequestDTO {
 
 	@Schema(title = "게시글 댓글 등록 요청 DTO", description = "게시글에 댓글 등록 요청에 사용하는 DTO입니다.")
 	@Getter
-	@AllArgsConstructor
 	public static class CreateReply {
 		@Schema(title = "부모 댓글 ID", description = "대댓글의 경우 필요한 부모 댓글의 ID입니다.", example = "1")
 		@Min(value = 1, message = "ID는 0 이하일 수 없습니다.")
@@ -59,6 +60,12 @@ public class PostRequestDTO {
 		@Schema(title = "댓글 내용", description = "댓글 내용입니다.", example = "댓글 내용")
 		@Length(max = 1000, message = "댓글은 1000자를 초과할 수 없습니다.")
 		private final String content;
+
+		@JsonCreator
+		public CreateReply(@JsonProperty("parentId") Long parentId, @JsonProperty("content") String content) {
+			this.parentId = parentId;
+			this.content = content;
+		}
 	}
 
 	@Schema(title = "게시글 수정 요청 DTO", description = "게시글의 수정 요청에 사용하는 DTO입니다.")

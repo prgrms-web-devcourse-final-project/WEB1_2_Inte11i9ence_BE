@@ -12,10 +12,10 @@ import com.prgrmsfinal.skypedia.notify.entity.Notify;
 
 @Repository
 public interface NotifyRepository extends JpaRepository<Notify, Long> {
-	@Query("SELECT n FROM Notify n WHERE n.member.id = :memberId AND n.read = :read ORDER BY n.id DESC")
-	List<Notify> findByMemberIdAndRead(@Param("memberId") Long memberId, @Param("read") boolean read);
+	@Query("SELECT n FROM Notify n WHERE n.member.id = :memberId AND n.viewed = :read ORDER BY n.id DESC")
+	List<Notify> findByMemberIdAndViewed(@Param("memberId") Long memberId, @Param("read") boolean viewed);
 
-	@Query("SELECT n FROM Notify n WHERE n.id = :notifyId AND n.member.id = :memberId AND n.read = :read")
+	@Query("SELECT n FROM Notify n WHERE n.id = :notifyId AND n.member.id = :memberId AND n.viewed = :viewed")
 	Optional<Notify> findByNotifyIdAndMemberId(@Param("notifyId") Long notifyId, @Param("memberId") Long memberId,
-		@Param("read") boolean read);
+		@Param("viewed") boolean viewed);
 }
