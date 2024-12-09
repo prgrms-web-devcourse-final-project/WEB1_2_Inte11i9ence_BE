@@ -34,11 +34,11 @@ public class PlanGroupReplyServiceImpl implements PlanGroupReplyService {
 			throw PlanError.NOT_FOUND_REPLIES.getException();
 		}
 
-		List<ReplyResponseDTO.Read> response = results.stream()
+		/*List<ReplyResponseDTO.Read> response = results.stream()
 			.map(
 				result -> ReplyMapper.toDTO(result, replyService.isCurrentMemberLiked(authentication, result),
 					replyService.getLikes(result)))
-			.toList();
+			.toList();*/
 
 		Reply lastReply = results.get(results.size() - 1);
 
@@ -47,7 +47,9 @@ public class PlanGroupReplyServiceImpl implements PlanGroupReplyService {
 			.append("/reply?lastidx=").append(lastReply.getId())
 			.toString();
 
-		return new ReplyResponseDTO.ReadAll(response, nextUri);
+		// return new ReplyResponseDTO.ReadAll(response, nextUri);
+
+		return new ReplyResponseDTO.ReadAll(null, nextUri);
 	}
 
 	@Override
