@@ -4,15 +4,19 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import com.prgrmsfinal.skypedia.member.entity.Member;
+import com.prgrmsfinal.skypedia.member.entity.Role;
 import com.prgrmsfinal.skypedia.member.service.MemberService;
 import com.prgrmsfinal.skypedia.planShare.dto.PlanGroupRequestDTO;
 import com.prgrmsfinal.skypedia.post.dto.PostRequestDTO;
+import com.prgrmsfinal.skypedia.post.exception.PostError;
 import com.prgrmsfinal.skypedia.reply.dto.ReplyRequestDTO;
 import com.prgrmsfinal.skypedia.reply.dto.ReplyResponseDTO;
 import com.prgrmsfinal.skypedia.reply.entity.Reply;
@@ -43,30 +47,36 @@ public class ReplyServiceImpl implements ReplyService {
 	private String REPLY_UNLIKES_PREFIX_KEY;
 
 	@Override
-	public ReplyResponseDTO.ReadAll readAll(Authentication authentication, Long parentId, Long lastReplyId) {
-		List<Reply> replies = replyRepository.findRepliesByParentId(parentId, lastReplyId, PageRequest.of(0, 20,
-			Sort.by(Sort.Direction.ASC, "id")));
+	public ReplyResponseDTO.ReadAll readAll(Authentication authentication, Long parentId, int page) {
+		Pageable pageable = PageRequest.of(page, 20, Sort.by("id").ascending());
+		Slice<Reply> result = replyRepository.findAllByParentId(parentId, pageable);
 
-		if (replies == null || replies.isEmpty()) {
+		if (result == null || result.isEmpty()) {
 			throw ReplyError.NOT_FOUND_REPLIES.getException();
 		}
 
-		List<ReplyResponseDTO.Read> response = replies.stream()
-			.map(reply -> ReplyMapper.toDTO(reply, isCurrentMemberLiked(authentication, reply), getLikes(reply)))
-			.toList();
+		boolean isAuth = authentication != null && authentication.isAuthenticated();
 
-		Reply lastReply = replies.get(replies.size() - 1);
+		List<ReplyResponseDTO.Read> replies = result.stream()
+			.map(reply -> ReplyMapper.toDTO(reply
+				, isAuth ? getLiked(memberService.getAuthenticatedMember(authentication).getId(), reply.getId()) : false
+				, getLikes(reply.getId())
+			)).toList();
+
+		if (!result.hasNext()) {
+			return new ReplyResponseDTO.ReadAll(replies, null);
+		}
 
 		String nextUri = new StringBuilder()
 			.append("/api/v1/reply/").append(parentId)
-			.append("?lastidx=").append(lastReply.getId())
+			.append("?page=").append(page + 1)
 			.toString();
 
-		return new ReplyResponseDTO.ReadAll(response, nextUri);
+		return new ReplyResponseDTO.ReadAll(replies, nextUri);
 	}
 
 	@Override
-	public Reply create(PostRequestDTO.CreateReply request, Member member) {
+	public Reply create(ReplyRequestDTO.Create request) {
 		Reply parentReply = null;
 
 		if (request.getParentId() != null) {
@@ -77,21 +87,7 @@ public class ReplyServiceImpl implements ReplyService {
 		return replyRepository.save(Reply.builder()
 			.parentReply(parentReply)
 			.content(request.getContent())
-			.build());
-	}
-
-	@Override
-	public Reply create(PlanGroupRequestDTO.CreateReply groupCreateReply, Member member) {
-		Reply parentReply = null;
-
-		if (groupCreateReply.getParentId() != null) {
-			parentReply = replyRepository.findById(groupCreateReply.getParentId())
-				.orElseThrow(ReplyError.NOT_FOUND_PARENT_REPLY::getException);
-		}
-
-		return replyRepository.save(Reply.builder()
-			.parentReply(parentReply)
-			.content(groupCreateReply.getContent())
+			.member(request.getMember())
 			.build());
 	}
 
@@ -100,7 +96,9 @@ public class ReplyServiceImpl implements ReplyService {
 		Reply reply = replyRepository.findByIdAndDeleted(replyId, false)
 			.orElseThrow(ReplyError.NOT_FOUND_REPLY::getException);
 
-		if (reply.getMember().getId() != memberService.getAuthenticatedMember(authentication).getId()) {
+		Member member = memberService.getAuthenticatedMember(authentication);
+
+		if (!reply.getMember().getId().equals(member.getId())) {
 			throw ReplyError.UNAUTHORIZED_MODIFY.getException();
 		}
 
@@ -114,7 +112,9 @@ public class ReplyServiceImpl implements ReplyService {
 		Reply reply = replyRepository.findByIdAndDeleted(replyId, false)
 			.orElseThrow(ReplyError.NOT_FOUND_REPLY::getException);
 
-		if (reply.getMember().getId() != memberService.getAuthenticatedMember(authentication).getId()) {
+		Member member = memberService.getAuthenticatedMember(authentication);
+
+		if (!reply.getMember().getId().equals(member.getId())) {
 			throw ReplyError.UNAUTHORIZED_DELETE.getException();
 		}
 
@@ -128,7 +128,9 @@ public class ReplyServiceImpl implements ReplyService {
 		Reply reply = replyRepository.findById(replyId)
 			.orElseThrow(ReplyError.NOT_FOUND_RESTORE::getException);
 
-		if (reply.getMember().getId() != memberService.getAuthenticatedMember(authentication).getId()) {
+		Member member = memberService.getAuthenticatedMember(authentication);
+
+		if (!member.getRole().equals(Role.ROLE_ADMIN) && !member.getId().equals(reply.getMember().getId())) {
 			throw ReplyError.UNAUTHORIZED_RESTORE.getException();
 		}
 
@@ -142,7 +144,7 @@ public class ReplyServiceImpl implements ReplyService {
 	}
 
 	@Override
-	public ReplyResponseDTO.ToggleLikes toggleLikes(Authentication authentication, Long replyId) {
+	public ReplyResponseDTO.LikeStatus toggleLikes(Authentication authentication, Long replyId) {
 		if (!authentication.isAuthenticated()) {
 			throw ReplyError.UNAUTHORIZED_TOGGLE_LIKES.getException();
 		}
@@ -154,7 +156,7 @@ public class ReplyServiceImpl implements ReplyService {
 
 		String likesKey = REPLY_LIKES_PREFIX_KEY + replyId;
 		String unlikesKey = REPLY_UNLIKES_PREFIX_KEY + replyId;
-		boolean isLiked = isCurrentMemberLiked(authentication, reply);
+		boolean isLiked = getLiked(memberId, replyId);
 
 		if (!isLiked) {
 			redisTemplate.opsForSet().add(likesKey, memberId.toString());
@@ -164,44 +166,33 @@ public class ReplyServiceImpl implements ReplyService {
 			redisTemplate.opsForSet().remove(likesKey, memberId.toString());
 		}
 
-		return new ReplyResponseDTO.ToggleLikes(!isLiked, getLikes(reply));
+		return new ReplyResponseDTO.LikeStatus(!isLiked, getLikes(reply.getId()));
 	}
 
 	@Override
-	public Long getLikes(Reply reply) {
-		String likesKey = REPLY_LIKES_PREFIX_KEY + reply.getId();
-		String unlikesKey = REPLY_UNLIKES_PREFIX_KEY + reply.getId();
-		Long likes = reply.getLikes();
+	public boolean getLiked(Long memberId, Long replyId) {
+		String likesKey = REPLY_LIKES_PREFIX_KEY + replyId;
+		String unlikesKey = REPLY_UNLIKES_PREFIX_KEY + replyId;
 
-		if (redisTemplate.hasKey(likesKey)) {
-			likes += redisTemplate.opsForSet().size(likesKey);
+		boolean isLiked = redisTemplate.opsForSet().isMember(likesKey, memberId.toString());
+		boolean isUnliked = redisTemplate.opsForSet().isMember(unlikesKey, memberId.toString());
+
+		if (!isLiked && !isUnliked) {
+			return replyLikesRepository.existsByReplyIdAndMemberId(replyId, memberId);
 		}
 
-		if (redisTemplate.hasKey(unlikesKey)) {
-			likes -= redisTemplate.opsForSet().size(unlikesKey);
-		}
-
-		return likes;
+		return isLiked && !isUnliked;
 	}
 
 	@Override
-	public boolean isCurrentMemberLiked(Authentication authentication, Reply reply) {
-		String likesKey = REPLY_LIKES_PREFIX_KEY + reply.getId();
-		String unlikesKey = REPLY_UNLIKES_PREFIX_KEY + reply.getId();
-		Long memberId = memberService.getAuthenticatedMember(authentication).getId();
+	public Long getLikes(Long replyId) {
+		String likesKey = REPLY_LIKES_PREFIX_KEY + replyId;
+		String unlikesKey = REPLY_UNLIKES_PREFIX_KEY + replyId;
 
-		if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(likesKey, memberId))) {
-			return true;
-		}
+		Long cachedLikes = redisTemplate.opsForSet().size(likesKey);
+		Long cachedUnlikes = redisTemplate.opsForSet().size(unlikesKey);
+		Long dbLikes = replyRepository.findLikesById(replyId);
 
-		if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(unlikesKey, memberId))) {
-			return false;
-		}
-
-		if (replyLikesRepository.existsByReplyIdAndMemberId(reply.getId(), memberId)) {
-			return true;
-		}
-
-		return false;
+		return dbLikes + (cachedLikes != null ? cachedLikes : 0) - (cachedUnlikes != null ? cachedUnlikes : 0);
 	}
 }
