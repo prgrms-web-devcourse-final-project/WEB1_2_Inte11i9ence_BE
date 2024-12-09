@@ -21,8 +21,10 @@ public enum PostError {
 	UNAUTHORIZED_RESTORE(HttpStatus.UNAUTHORIZED, "게시글 복구 권한이 없습니다."),
 	UNAUTHORIZED_READ_SCRAPS(HttpStatus.UNAUTHORIZED, "스크랩 게시글 목록 조회 권한이 없습니다."),
 	BAD_REQUEST_RESTORE(HttpStatus.BAD_REQUEST, "게시글이 이미 복구되었거나, 삭제되지 않았습니다."),
-	BAD_REQUEST_SEARCH_TARGET(HttpStatus.BAD_REQUEST, "잘못된 검색 조건입니다."),
-	BAD_REQUEST_SORT_ORDER(HttpStatus.BAD_REQUEST, "잘못된 정렬 조건입니다.");
+	BAD_REQUEST_SEARCH_OPTION(HttpStatus.BAD_REQUEST, "검색 조건이 잘못 되었거나 비어있습니다."),
+	BAD_REQUEST_SEARCH_KEYWORD(HttpStatus.BAD_REQUEST, "검색 키워드는 2글자 이상이어야 합니다."),
+	BAD_REQUEST_SORT_ORDER(HttpStatus.BAD_REQUEST, "잘못된 정렬 조건입니다."),
+	BAD_REQUEST_TOGGLE_SCRAP(HttpStatus.BAD_REQUEST, "본인 게시글을 스크랩할 수 없습니다.");
 
 	private final CommonException commonException;
 

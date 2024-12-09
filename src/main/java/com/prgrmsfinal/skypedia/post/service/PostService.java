@@ -6,20 +6,21 @@ import org.springframework.security.core.Authentication;
 
 import com.prgrmsfinal.skypedia.post.dto.PostRequestDTO;
 import com.prgrmsfinal.skypedia.post.dto.PostResponseDTO;
+import com.prgrmsfinal.skypedia.reply.dto.ReplyRequestDTO;
 import com.prgrmsfinal.skypedia.reply.dto.ReplyResponseDTO;
 
 public interface PostService {
 	PostResponseDTO.Read read(Authentication authentication, Long postId);
 
-	PostResponseDTO.ReadAll readAll(String category, String cursor, Long lastId, String order);
+	PostResponseDTO.ReadAll readAll(String order, String category, int page);
 
-	PostResponseDTO.ReadAll readAll(String username, Long lastId);
+	PostResponseDTO.ReadAll readAll(String username, int page);
 
-	PostResponseDTO.ReadAll readAll(Authentication authentication, Long lastId);
+	PostResponseDTO.ReadAll readAll(Authentication authentication, int page);
 
-	PostResponseDTO.ReadAll search(String keyword, String target, String cursor, Long lastId);
+	PostResponseDTO.ReadAll search(String keyword, String option, int page);
 
-	ReplyResponseDTO.ReadAll readReplies(Authentication authentication, Long postId, Long lastReplyId);
+	ReplyResponseDTO.ReadAll readReplies(Authentication authentication, Long postId, int page);
 
 	List<String> create(Authentication authentication, PostRequestDTO.Create request);
 
@@ -31,7 +32,7 @@ public interface PostService {
 
 	void restore(Authentication authentication, Long postId);
 
-	PostResponseDTO.ToggleLikes toggleLikes(Authentication authentication, Long postId);
+	PostResponseDTO.LikeStatus toggleLikes(Authentication authentication, Long postId);
 
 	boolean toggleScrap(Authentication authentication, Long postId);
 }

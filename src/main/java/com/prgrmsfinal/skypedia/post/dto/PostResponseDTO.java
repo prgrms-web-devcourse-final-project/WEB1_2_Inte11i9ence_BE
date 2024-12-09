@@ -63,36 +63,6 @@ public class PostResponseDTO {
 		private final ReplyResponseDTO.ReadAll reply;
 	}
 
-	@Getter
-	@AllArgsConstructor
-	public static class Search {
-		private final Long id;
-
-		private final Member member;
-
-		private final PostCategory category;
-
-		private final String title;
-
-		private final String content;
-
-		private final String hashtags;
-
-		private final Long views;
-
-		private final Long likes;
-
-		private final Float rating;
-
-		private final boolean deleted;
-
-		private final LocalDateTime createdAt;
-
-		private final LocalDateTime deletedAt;
-
-		private final double relevance;
-	}
-
 	@Schema(title = "게시글 목록 조회 응답 DTO", description = "게시글의 목록 조회 응답에 사용하는 DTO입니다.")
 	@Getter
 	@AllArgsConstructor
@@ -125,7 +95,8 @@ public class PostResponseDTO {
 	@Getter
 	@AllArgsConstructor
 	@Builder
-	public static class ToggleLikes {
+	@Schema(title = "게시글 좋아요 DTO", description = "게시글 좋아요 토글 응답에 사용하는 DTO입니다.")
+	public static class LikeStatus {
 		@Schema(title = "좋아요 여부", description = "회원의 좋아요 토글 여부입니다.", example = "true")
 		private final boolean liked;
 
@@ -136,6 +107,7 @@ public class PostResponseDTO {
 	@Getter
 	@AllArgsConstructor
 	@Builder
+	@Schema(title = "게시글 내용 응답 DTO", description = "게시글 내용 응답에 사용하는 DTO입니다.")
 	public static class Info {
 		@Schema(title = "게시글 ID", description = "게시글 ID입니다.", minimum = "1", example = "25")
 		private final Long id;

@@ -50,21 +50,4 @@ public class PostMapper {
 			.photoUrl(photoUrl)
 			.build();
 	}
-
-	public static PostResponseDTO.Info toDTO(PostResponseDTO.Search post, MemberResponseDTO.Info memberInfo
-		, Long views, Long likes, Long replies, String photoUrl) {
-		return PostResponseDTO.Info.builder()
-			.id(post.getId())
-			.author(memberInfo)
-			.title(post.getTitle())
-			.content(post.getContent())
-			.views(views)
-			.likes(likes)
-			.replies(replies)
-			.category(post.getCategory().getName())
-			.rating(post.getRating())
-			.postedAt(post.getCreatedAt())
-			.photoUrl(photoUrl)
-			.build();
-	}
 }
