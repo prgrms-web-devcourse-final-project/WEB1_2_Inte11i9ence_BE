@@ -36,7 +36,7 @@ public class ReplyController {
 	@ResponseStatus(HttpStatus.OK)
 	public ReplyResponseDTO.ReadAll readAll(Authentication authentication,
 		@PathVariable("parentId") @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long parentId,
-		@RequestParam(value = "lastidx", defaultValue = "0") Long lastReplyId) {
+		@RequestParam(value = "lastidx", defaultValue = "0", required = false) Long lastReplyId) {
 		return replyService.readAll(authentication, parentId, lastReplyId);
 	}
 

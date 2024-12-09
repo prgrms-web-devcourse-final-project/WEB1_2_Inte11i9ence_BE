@@ -51,12 +51,18 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/login/oauth2/code/**", "/oauth2/authorization/**",
 								"/error", "/login", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**",
-								"/webjars/**", "/actuator/**",
-								"/api/v1/").permitAll()
-						.requestMatchers(HttpMethod.GET,"/api/v1/region",
-								"/api/v1/posts","/api/v1/plan-group",
-								"/api/v1/photo","/api/v1/notify",
-								"/api/v1/post-category").permitAll()
+								"/webjars/**", "/actuator/**").permitAll()
+						.requestMatchers(HttpMethod.GET,
+								"/api/v1/posts","/api/v1/plan-group","/api/v1/notify",
+								"/api/v1/post-category","/api/v1/plan-detail**",
+								"/api/v1/region**","/api/v1/plan-group**",
+								"/api/v1/member/{username}","/api/v1/post**",
+								"/api/v1/reply**","/api/v1/photo**").permitAll()
+						.requestMatchers("/ws-stomp/**").permitAll()  // WebSocket 엔드포인트 허용
+						.requestMatchers(HttpMethod.GET,
+								"/api/v1/chat/rooms",
+								"/api/v1/chat/room/{roomId}/messages").authenticated()
+						.requestMatchers("/api/v1/chat/**").authenticated()
 						.anyRequest().authenticated())
 				.oauth2Login(oauth2 -> oauth2
 						.successHandler((request, response, authentication) -> {

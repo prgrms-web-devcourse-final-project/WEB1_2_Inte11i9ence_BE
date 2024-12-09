@@ -1,6 +1,5 @@
 package com.prgrmsfinal.skypedia.member.dto;
 
-import com.prgrmsfinal.skypedia.global.entity.BaseTime;
 import com.prgrmsfinal.skypedia.member.entity.Member;
 import com.prgrmsfinal.skypedia.member.entity.Role;
 
@@ -10,7 +9,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 @Getter
-public class MemberResponseDTO extends BaseTime {    //회원 조회용 DTO
+public class MemberResponseDTO {    //회원 조회용 DTO
 	private final Long id;
 	private final String oauthId;
 	private final String name;

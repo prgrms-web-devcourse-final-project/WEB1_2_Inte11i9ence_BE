@@ -3,8 +3,7 @@ package com.prgrmsfinal.skypedia.planShare.entity;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-import com.prgrmsfinal.skypedia.global.entity.BaseTime;
-
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -23,7 +22,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class PlanDetail extends BaseTime {
+public class PlanDetail {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -59,6 +58,12 @@ public class PlanDetail extends BaseTime {
 	private Boolean deleted = false;    // 논리 삭제 여부
 
 	private LocalDateTime deletedAt;    // 세부 일정 삭제 일자
+
+	@Column(insertable = false, updatable = false)
+	private LocalDateTime createdAt;
+
+	@Column(insertable = false, updatable = false)
+	private LocalDateTime updatedAt;
 
 	public void updateCoordinates(Double latitude, Double longitude) {
 		if (latitude < -90 || latitude > 90) {

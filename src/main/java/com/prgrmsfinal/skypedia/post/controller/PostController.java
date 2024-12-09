@@ -38,7 +38,6 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1")
-@Validated
 @Tag(name = "게시글 API 컨트롤러", description = "게시글과 관련된 REST API를 제공하는 컨트롤러입니다.")
 public class PostController {
 	private final PostService postService;
@@ -100,7 +99,7 @@ public class PostController {
 	@ResponseStatus(HttpStatus.OK)
 	public ReplyResponseDTO.ReadAll readReplies(Authentication authentication,
 		@PathVariable @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long postId
-		, @RequestParam(name = "lastidx", defaultValue = "0") Long lastId) {
+		, @RequestParam(name = "lastidx", defaultValue = "0", required = false) Long lastId) {
 		return postService.readReplies(authentication, postId, lastId);
 	}
 
@@ -156,16 +155,16 @@ public class PostController {
 	@GetMapping("/posts")
 	@ResponseStatus(HttpStatus.OK)
 	public PostResponseDTO.ReadAll readAll(@RequestParam("category") String category
-		, @RequestParam("order") String order
-		, @RequestParam("cursor") String cursor
-		, @RequestParam(name = "lastidx", defaultValue = "0") Long lastPostId) {
+		, @RequestParam(name = "order", required = false) String order
+		, @RequestParam(name = "cursor", required = false) String cursor
+		, @RequestParam(name = "lastidx", defaultValue = "0", required = false) Long lastPostId) {
 		return postService.readAll(category, cursor, lastPostId, order);
 	}
 
 	@GetMapping("/posts/{username}")
 	@ResponseStatus(HttpStatus.OK)
 	public PostResponseDTO.ReadAll readAll(@PathVariable("username") String username
-		, @RequestParam(name = "lastidx", defaultValue = "0") Long lastPostId) {
+		, @RequestParam(name = "lastidx", defaultValue = "0", required = false) Long lastPostId) {
 		return postService.readAll(username, lastPostId);
 	}
 
@@ -178,9 +177,9 @@ public class PostController {
 	@GetMapping("/posts/search")
 	@ResponseStatus(HttpStatus.OK)
 	public PostResponseDTO.ReadAll search(@RequestParam("keyword") String keyword
-		, @RequestParam("target") String target
-		, @RequestParam("lastrev") String cursor
-		, @RequestParam(name = "lastidx", defaultValue = "0") Long lastPostId) {
+		, @RequestParam(name = "target", required = false) String target
+		, @RequestParam(name = "lastrev", required = false) String cursor
+		, @RequestParam(name = "lastidx", required = false, defaultValue = "0") Long lastPostId) {
 		return postService.search(keyword, target, cursor, lastPostId);
 	}
 
