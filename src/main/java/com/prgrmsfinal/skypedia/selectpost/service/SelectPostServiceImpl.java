@@ -2,6 +2,7 @@ package com.prgrmsfinal.skypedia.selectpost.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
@@ -14,6 +15,8 @@ import com.prgrmsfinal.skypedia.member.entity.Member;
 import com.prgrmsfinal.skypedia.member.repository.MemberRepository;
 import com.prgrmsfinal.skypedia.photo.dto.PhotoResponseDTO;
 import com.prgrmsfinal.skypedia.photo.entity.Photo;
+import com.prgrmsfinal.skypedia.photo.entity.SelectPostPhoto;
+import com.prgrmsfinal.skypedia.photo.entity.SelectPostPhotoId;
 import com.prgrmsfinal.skypedia.photo.repository.PhotoRepository;
 import com.prgrmsfinal.skypedia.photo.repository.SelectPostPhotoRepository;
 import com.prgrmsfinal.skypedia.photo.service.PhotoService;
@@ -92,36 +95,60 @@ public class SelectPostServiceImpl implements SelectPostService {
 
 	@Override
 	@Transactional
-	public SelectPostResponseDto createSelectPost(Long memberId, SelectPostRequestDto requestDto) {
+	public List<PhotoResponseDTO.Info> createSelectPost(Long memberId, SelectPostRequestDto selectPostRequestDto) {
 		// 회원 조회
 		Member member = memberRepository.findById(memberId)
 			.orElseThrow(() -> new RuntimeException("회원을 찾을 수 없습니다."));
 
 		// 선택 게시글 생성
-		SelectPost selectPost = new SelectPost();
-		selectPost.setMember(member);
-		selectPost.setContent(requestDto.getContent());
+		SelectPost selectPost = SelectPost.builder()
+			.member(member)
+			.content(selectPostRequestDto.getContent())
+			.build();
 
 		// 게시글 저장
 		selectPost = selectPostRepository.save(selectPost);
 
 		// PhotoService를 통해 사진 업로드 및 URL 받기
-		List<PhotoResponseDTO.Info> photoInfos = photoService.uploadPhotosForPost(
-			selectPost.getId(),
-			requestDto.getUploads()
-		);
+		List<PhotoResponseDTO.Info> photoInfos = photoService.createPhotoUrlList(selectPostRequestDto.getUploads());
 
 		// presigned URL 목록 생성
 		List<String> presignedUrls = photoInfos.stream()
 			.map(PhotoResponseDTO.Info::getPhotoUrl)
 			.collect(Collectors.toList());
 
+		//photo 생성된거에서 id 끄집어오기
+		List<Long> photoIds = photoInfos.stream()
+			.map(PhotoResponseDTO.Info::getId)
+			.collect(Collectors.toList());
+
+		Map<Long, Photo> photoMap = photoRepository.findAllById(photoIds).stream()
+			.collect(Collectors.toMap(Photo::getId, photo -> photo));
+
+		for (Long photoId : photoIds) {
+			Photo photo = photoMap.get(photoId);
+			if (photo == null) {
+				throw new RuntimeException("해당 ID의 사진을 찾을 수 없습니다: " + photoId);
+			}
+
+			// 복합 키 생성
+			SelectPostPhotoId selectPostPhotoId = new SelectPostPhotoId();
+			selectPostPhotoId.setPostId(selectPost.getId());
+			selectPostPhotoId.setPhotoId(photoId);
+
+			SelectPostPhoto selectPostPhoto = SelectPostPhoto.builder()
+				.id(selectPostPhotoId)
+				.selectPost(selectPost)
+				.photo(photo)
+				.category(determinePhotoCategory(photo))  // 카테고리 설정
+				.likes(0L)  // 초기 좋아요 수 설정
+				.build();
+
+			selectPostPhotoRepository.save(selectPostPhoto);
+		}
+
 		// 응답 DTO 생성
-		return SelectPostResponseDto.builder()
-			.selectPostId(selectPost.getId())
-			.content(selectPost.getContent())
-			.presignedUrls(presignedUrls)
-			.build();
+		return photoInfos;
 	}
 
 	@Override
@@ -130,7 +157,6 @@ public class SelectPostServiceImpl implements SelectPostService {
 		// 게시글 조회
 		SelectPost selectPost = selectPostRepository.findById(selectPostId)
 			.orElseThrow(() -> new RuntimeException("선택 게시글을 찾을 수 없습니다."));
-
 		// 작성자 확인
 		if (!selectPost.getMember().getId().equals(memberId)) {
 			throw new RuntimeException("게시글 수정 권한이 없습니다.");
