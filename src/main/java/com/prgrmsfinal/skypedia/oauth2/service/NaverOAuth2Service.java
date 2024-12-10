@@ -22,6 +22,7 @@ import java.util.UUID;
 public class NaverOAuth2Service {
     private final MemberRepository memberRepository;
     private final JwtTokenProvider jwtTokenProvider;
+    private final RefreshTokenService refreshTokenService;
 
     public TokenResponse authenticateNaverUser(Map<String, Object> attributes) {
         log.info("Naver attributes: {}", attributes);
@@ -55,6 +56,8 @@ public class NaverOAuth2Service {
 
         String accessToken = jwtTokenProvider.createAccessToken(member);
         String refreshToken = jwtTokenProvider.createRefreshToken(member);
+
+        refreshTokenService.saveRefreshToken(member, refreshToken);
 
         return TokenResponse.builder()
                 .accessToken(accessToken)

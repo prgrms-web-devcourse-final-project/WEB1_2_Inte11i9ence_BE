@@ -5,6 +5,7 @@ import com.prgrmsfinal.skypedia.member.entity.Member;
 
 public class MemberMapper {
 	public static MemberResponseDTO.Info toDTO(Member member) {
-		return new MemberResponseDTO.Info(member.getUsername(), member.getProfileImage());
+		return new MemberResponseDTO.Info(
+				member.getId(),member.getUsername(), member.getProfileImage());
 	}
 }
