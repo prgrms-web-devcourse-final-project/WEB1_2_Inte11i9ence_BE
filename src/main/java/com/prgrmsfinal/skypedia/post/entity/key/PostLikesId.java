@@ -1,12 +1,21 @@
 package com.prgrmsfinal.skypedia.post.entity.key;
 
-import jakarta.persistence.Embeddable;
-
 import java.io.Serializable;
 
-@Embeddable
-public class PostLikesId implements Serializable {
-    private Long postId;
+import jakarta.persistence.Embeddable;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-    private Long memberId;
+@Embeddable
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+public class PostLikesId implements Serializable {
+	private Long postId;
+
+	private Long memberId;
 }
