@@ -14,6 +14,7 @@ import lombok.Setter;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode
 public class PostLikesId implements Serializable {
 	private Long postId;
 
