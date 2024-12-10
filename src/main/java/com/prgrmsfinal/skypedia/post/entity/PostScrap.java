@@ -5,12 +5,14 @@ import java.time.LocalDateTime;
 import com.prgrmsfinal.skypedia.member.entity.Member;
 import com.prgrmsfinal.skypedia.post.entity.key.PostScrapId;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -18,7 +20,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Getter
+@Data
 public class PostScrap {
 	@EmbeddedId
 	private PostScrapId id;
@@ -31,5 +33,6 @@ public class PostScrap {
 	@MapsId("memberId")
 	private Member member;
 
+	@Column(insertable = false, updatable = false)
 	private LocalDateTime scrapedAt;
 }

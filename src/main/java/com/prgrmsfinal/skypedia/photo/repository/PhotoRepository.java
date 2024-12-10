@@ -26,4 +26,16 @@ public interface PhotoRepository extends JpaRepository<Photo, Long> {
 	@Query("SELECT ph.s3FileKey FROM PostPhoto pp JOIN pp.photo ph WHERE pp.post.id = :postId")
 	List<String> findS3FileKeysByPostId(@Param("postId") Long postId);
 
+	@Query("SELECT p.s3FileKey FROM SelectPostPhoto spp JOIN spp.photo p WHERE spp.selectPost.id = :selectPostId")
+	List<String> findS3FileKeysBySelectPostId(@Param("selectPostId") Long selectPostId);
+
+	@Query("SELECT p FROM Photo p WHERE p.uuid IN :uuids")
+	List<Photo> findAllByUuidIn(@Param("uuids") List<String> uuids);
+
+	// 또는 JPA 네이밍 규칙을 사용한다면:
+	List<Photo> findByUuidIn(List<String> uuids);
+
+	@Query("SELECT p FROM Photo p ORDER BY p.createdAt DESC LIMIT :limit")
+	List<Photo> findLatestPhotos(@Param("limit") int limit);
+
 }

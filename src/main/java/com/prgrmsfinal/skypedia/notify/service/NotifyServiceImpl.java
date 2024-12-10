@@ -134,7 +134,7 @@ public class NotifyServiceImpl implements NotifyService {
 
 		Member member = memberService.getAuthenticatedMember(authentication);
 
-		List<Notify> notifies = notifyRepository.findByMemberIdAndRead(member.getId(), read);
+		List<Notify> notifies = notifyRepository.findByMemberIdAndViewed(member.getId(), read);
 
 		if (notifies.isEmpty()) {
 			throw NotifyError.NOT_FOUND_NOTIFIES.getException();
@@ -167,7 +167,7 @@ public class NotifyServiceImpl implements NotifyService {
 
 		Member member = memberService.getAuthenticatedMember(authentication);
 
-		List<Notify> notifies = notifyRepository.findByMemberIdAndRead(member.getId(), false);
+		List<Notify> notifies = notifyRepository.findByMemberIdAndViewed(member.getId(), false);
 
 		if (notifies.isEmpty()) {
 			throw NotifyError.NOT_FOUND_NOTIFY_CHECKS.getException();

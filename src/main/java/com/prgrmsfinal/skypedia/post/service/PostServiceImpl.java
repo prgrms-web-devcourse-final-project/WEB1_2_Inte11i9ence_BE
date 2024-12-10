@@ -1,13 +1,18 @@
 package com.prgrmsfinal.skypedia.post.service;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import com.prgrmsfinal.skypedia.member.entity.Role;
 import com.prgrmsfinal.skypedia.member.repository.MemberRepository;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.Authentication;
@@ -29,20 +34,19 @@ import com.prgrmsfinal.skypedia.post.repository.PostLikesRepository;
 import com.prgrmsfinal.skypedia.post.repository.PostRepository;
 import com.prgrmsfinal.skypedia.post.repository.PostScrapRepository;
 import com.prgrmsfinal.skypedia.post.util.PostMapper;
+import com.prgrmsfinal.skypedia.reply.dto.ReplyRequestDTO;
 import com.prgrmsfinal.skypedia.reply.dto.ReplyResponseDTO;
 import com.prgrmsfinal.skypedia.reply.entity.Reply;
 import com.prgrmsfinal.skypedia.reply.service.ReplyService;
 
 import lombok.RequiredArgsConstructor;
-
-// ※ 추후 검색 기능 구현 및 로깅 작업 필요함.
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PostServiceImpl implements PostService {
 	private final RedisTemplate<String, String> redisTemplate;
-
-	private final MemberRepository memberRepository;
 
 	private final PostRepository postRepository;
 
@@ -55,8 +59,6 @@ public class PostServiceImpl implements PostService {
 	private final PostReplyService postReplyService;
 
 	private final MemberService memberService;
-
-	private final ReplyService replyService;
 
 	private final ApplicationEventPublisher eventPublisher;
 
@@ -77,174 +79,198 @@ public class PostServiceImpl implements PostService {
 
 	@Override
 	public PostResponseDTO.Read read(Authentication authentication, Long postId) {
+		Long memberId = null;
+
+		if (authentication != null && authentication.isAuthenticated()) {
+			memberId = memberService.getAuthenticatedMember(authentication).getId();
+		}
+
 		Post post = postRepository.findByIdAndDeleted(postId, false)
 			.orElseThrow(PostError.NOT_FOUND_POST::getException);
 
-		incrementViews(postId);
+		log.info("postId : {}", postId);
+		incrementViewsCache(postId);
 
 		MemberResponseDTO.Info memberInfo = MemberMapper.toDTO(post.getMember());
 
 		PostResponseDTO.Statistics postStats = PostResponseDTO.Statistics.builder()
-			.views(getViews(postId, post.getViews()))
-			.likes(getLikes(postId, post.getLikes()))
-			.liked(isCurrentMemberLiked(authentication, post))
-			.scraped(isCurrentMemberScraped(authentication, post))
+			.views(getViews(postId))
+			.likes(getLikes(postId))
+			.liked(memberId != null && getLiked(memberId, postId))
+			.scraped(memberId != null && getScraped(memberId, postId))
 			.build();
 
-		ReplyResponseDTO.ReadAll replies = postReplyService.readAll(authentication, postId, 0L);
+		ReplyResponseDTO.ReadAll replies = postReplyService.readAll(authentication, postId, 0);
 
 		return PostMapper.toDTO(post, memberInfo, postStats, null, replies);
 	}
 
 	@Override
-	public PostResponseDTO.ReadAll readAll(String category, String cursor, Long lastId, String order) {
-		if (!postCategoryService.existsByName(category)) {
+	public PostResponseDTO.ReadAll readAll(String order, String category, int page) {
+		if (category != null && !postCategoryService.existsByName(category)) {
 			throw PostError.NOT_FOUND_CATEGORY.getException();
 		}
 
-		List<Post> posts = null;
+		Sort sort = null;
 
 		if (StringUtils.isBlank(order)) {
-			posts = postRepository.findPostsById(lastId, false, category,
-				getPageable(10, Sort.by(Sort.Direction.DESC, "id")));
+			sort = Sort.by("id").descending();
 		} else {
-			posts = switch (order) {
-				case "likes" -> postRepository.findPostsByLikes(Long.parseLong(cursor), lastId, false, category,
-					getPageable(10, Sort.by(Sort.Direction.DESC, "likes").and(Sort.by(Sort.Direction.DESC, "id"))));
-				case "title" -> postRepository.findPostsByTitle(cursor, lastId, false, category,
-					getPageable(10, Sort.by(Sort.Direction.ASC, "title").and(Sort.by(Sort.Direction.DESC, "id"))));
-				case "rating" -> postRepository.findPostsByRating(Float.parseFloat(cursor), lastId, false, category,
-					getPageable(10, Sort.by(Sort.Direction.DESC, "rating").and(Sort.by(Sort.Direction.DESC, "id"))));
+			sort = switch (order) {
+				case "likes" -> Sort.by("likes").descending().and(Sort.by("id").descending());
+				case "title" -> Sort.by("title").ascending().and(Sort.by("id").descending());
+				case "rating" -> Sort.by("rating").descending().and(Sort.by("id").descending());
 				default -> throw PostError.BAD_REQUEST_SORT_ORDER.getException();
 			};
 		}
 
-		if (posts == null || posts.isEmpty()) {
+		Pageable pageable = PageRequest.of(page, 10, sort);
+		Slice<Post> result = (StringUtils.isBlank(category)) ? postRepository.findAllByDeleted(false, pageable)
+			: postRepository.findAllByCategory(false, category, pageable);
+
+
+		if (result == null || result.isEmpty()) {
 			throw PostError.NOT_FOUND_POSTS.getException();
 		}
 
-		List<PostResponseDTO.Info> response = posts.stream()
-			.map(post -> {
-				MemberResponseDTO.Info memberInfo = MemberMapper.toDTO(post.getMember());
-				Long replies = postReplyService.getReplyCount(post.getId());
-				return PostMapper.toDTO(post, memberInfo, getViews(post.getId(), post.getViews()),
-					getLikes(post.getId(), post.getLikes()), replies, null);
-			}).toList();
+		List<PostResponseDTO.Info> posts = makeResult(result);
 
-		Post lastPost = posts.get(posts.size() - 1);
-		StringBuilder nextUri = new StringBuilder("/api/v1/posts?lastId=" + lastPost.getId());
-
-		nextUri.append(switch (order) {
-			case "likes" -> "&cursor=" + lastPost.getLikes();
-			case "title" -> "&cursor=" + lastPost.getTitle();
-			case "rating" -> "&cursor=" + lastPost.getRating();
-			default -> "";
-		});
-
-		if (category != null) {
-			nextUri.append("&category=" + category);
+		if (!result.hasNext()) {
+			return new PostResponseDTO.ReadAll(posts, null);
 		}
 
-		return new PostResponseDTO.ReadAll(response, nextUri.toString());
+		Map<String, String> params = new HashMap<>(){{
+			put("order", order);
+			put("category", category);
+		}};
+
+		return new PostResponseDTO.ReadAll(posts, makeNextUri("/api/v1/posts?", params, page + 1));
 	}
 
 	@Override
-	public PostResponseDTO.ReadAll readAll(String username, Long lastId) {
-		if (!memberService.checkExistsByUsername(username)) {
-			throw PostError.NOT_FOUND_USERNAME.getException();
-		}
+	public PostResponseDTO.ReadAll readAll(String username, int page) {
+		Pageable pageable = PageRequest.of(page, 10, Sort.by("id").descending());
+		Slice<Post> result = postRepository.findAllByUsername(username,false, pageable);
 
-		List<Post> posts = postRepository.findPostsByUsername(username, lastId, false,
-			getPageable(10, Sort.by(Sort.Direction.DESC, "id")));
-
-		if (posts == null || posts.isEmpty()) {
+		if (result == null || result.isEmpty()) {
 			throw PostError.NOT_FOUND_POSTS.getException();
 		}
 
-		List<PostResponseDTO.Info> response = posts.stream()
-			.map(post -> {
-				MemberResponseDTO.Info memberInfo = MemberMapper.toDTO(post.getMember());
-				Long replies = postReplyService.getReplyCount(post.getId());
-				return PostMapper.toDTO(post, memberInfo, getViews(post.getId(), post.getViews()),
-					getLikes(post.getId(), post.getLikes()), replies, null);
-			}).toList();
+		List<PostResponseDTO.Info> posts = makeResult(result);
 
-		Post lastPost = posts.get(posts.size() - 1);
-		String nextUri = new StringBuilder()
-			.append("/api/v1/posts/").append(username)
-			.append("?lastId=").append(lastPost.getId()).toString();
+		if (!result.hasNext()) {
+			return new PostResponseDTO.ReadAll(posts, null);
+		}
 
-		return new PostResponseDTO.ReadAll(response, nextUri);
+		return new PostResponseDTO.ReadAll(posts, makeNextUri("/api/v1/posts/" + username, null, page + 1));
 	}
 
 	@Override
-	public PostResponseDTO.ReadAll readAll(Authentication authentication, Long lastId) {
-		if (!authentication.isAuthenticated()) {
+	public PostResponseDTO.ReadAll readAll(Authentication authentication, int page) {
+		if (authentication == null || !authentication.isAuthenticated()) {
 			throw PostError.UNAUTHORIZED_READ_SCRAPS.getException();
 		}
 
-		String username = memberService.getAuthenticatedMember(authentication).getUsername();
+		Long memberId = memberService.getAuthenticatedMember(authentication).getId();
 
-		List<Post> posts = postRepository.findPostsByUsername(username, lastId, false,
-			getPageable(10, Sort.by(Sort.Direction.DESC, "id")));
+		Pageable pageable = PageRequest.of(page, 10, Sort.by("id").descending());
+		Slice<Post> result = postScrapRepository.findAllByScraped(memberId,false, pageable);
 
-		if (posts == null || posts.isEmpty()) {
+		if (result == null || result.isEmpty()) {
 			throw PostError.NOT_FOUND_POSTS.getException();
 		}
 
-		List<PostResponseDTO.Info> response = posts.stream()
-			.map(post -> {
-				MemberResponseDTO.Info memberInfo = MemberMapper.toDTO(post.getMember());
-				Long replies = postReplyService.getReplyCount(post.getId());
-				return PostMapper.toDTO(post, memberInfo, getViews(post.getId(), post.getViews()),
-					getLikes(post.getId(), post.getLikes()), replies, null);
-			}).toList();
+		List<PostResponseDTO.Info> posts = makeResult(result);
 
-		Post lastPost = posts.get(posts.size() - 1);
-		String nextUri = new StringBuilder()
-			.append("/api/v1/posts/scrap")
-			.append("&lastId=").append(lastPost.getId()).toString();
+		if (!result.hasNext()) {
+			return new PostResponseDTO.ReadAll(posts, null);
+		}
 
-		return new PostResponseDTO.ReadAll(response, nextUri);
+		return new PostResponseDTO.ReadAll(posts, makeNextUri("/api/v1/posts/scrap", null, page + 1));
 	}
 
 	@Override
-	public PostResponseDTO.ReadAll search(String keyword, String target, String cursor, Long lastId) {
-		List<PostResponseDTO.Search> results = switch (target) {
-			case "title" -> postRepository.findPostsByTitleKeyword(keyword, Double.parseDouble(cursor), lastId);
-			case "hashtags" -> postRepository.findPostsByHashtagsKeyword(keyword, Double.parseDouble(cursor), lastId);
-			default -> throw PostError.BAD_REQUEST_SEARCH_TARGET.getException();
+	public PostResponseDTO.ReadAll search(String keyword, String option, int page) {
+		if (StringUtils.isBlank(option)) {
+			throw PostError.BAD_REQUEST_SEARCH_OPTION.getException();
+		}
+
+		if (StringUtils.isBlank(keyword) || keyword.length() <= 2) {
+			throw PostError.BAD_REQUEST_SEARCH_KEYWORD.getException();
+		}
+
+		int offset = page * 10;
+
+		List<Post> result = switch (option) {
+			case "title" -> postRepository.findPostsByTitleKeyword(keyword, offset);
+			case "hashtags" -> postRepository.findPostsByHashtagsKeyword(keyword, offset);
+			default -> throw PostError.BAD_REQUEST_SEARCH_OPTION.getException();
 		};
 
-		if (results == null || results.isEmpty()) {
+		if (result == null || result.isEmpty()) {
 			throw PostError.NOT_FOUND_POSTS.getException();
 		}
 
-		List<PostResponseDTO.Info> response = results.stream()
+		List<PostResponseDTO.Info> posts = makeResult(result);
+
+		if (posts.size() != 10) {
+			return new PostResponseDTO.ReadAll(posts, null);
+		}
+
+		Map<String, String> params = new HashMap<>(){{
+			put("keyword", keyword);
+			put("option", option);
+		}};
+
+		return new PostResponseDTO.ReadAll(posts, makeNextUri("/api/v1/posts/search?", params, page + 1));
+	}
+
+	private List<PostResponseDTO.Info> makeResult(Slice<Post> posts) {
+		return posts.stream()
 			.map(post -> {
+				Long postId = post.getId();
 				MemberResponseDTO.Info memberInfo = MemberMapper.toDTO(post.getMember());
 				Long replies = postReplyService.getReplyCount(post.getId());
-				return PostMapper.toDTO(post, memberInfo, getViews(post.getId(), post.getViews()),
-					getLikes(post.getId(), post.getLikes()), replies, null);
+				return PostMapper.toDTO(post, memberInfo, getViews(postId),
+					getLikes(postId), replies, null);
 			}).toList();
+	}
 
-		PostResponseDTO.Search lastResult = results.get(results.size() - 1);
+	private List<PostResponseDTO.Info> makeResult(List<Post> posts) {
+		return posts.stream()
+			.map(post -> {
+				Long postId = post.getId();
+				MemberResponseDTO.Info memberInfo = MemberMapper.toDTO(post.getMember());
+				Long replies = postReplyService.getReplyCount(post.getId());
+				return PostMapper.toDTO(post, memberInfo, getViews(postId),
+					getLikes(postId), replies, null);
+			}).toList();
+	}
 
-		String nextUri = new StringBuilder()
-			.append("/api/v1/posts?keyword=").append(keyword)
-			.append("&target=").append(target)
-			.append("&lastrev=").append(lastResult.getRelevance())
-			.append("&lastidx=").append(lastResult.getId()).toString();
+	private String makeNextUri(String baseUri, Map<String, String> params, int page) {
+		StringBuilder uri = new StringBuilder(baseUri)
+			.append("page=").append(page).append("&");
 
-		return new PostResponseDTO.ReadAll(response, nextUri);
+		if (params == null || params.isEmpty()) {
+			return uri.toString();
+		}
+
+		params.forEach((param, value) -> {
+			if (StringUtils.isNotBlank(value)) {
+				uri.append(param).append("=")
+					.append(value).append("&");
+			}
+		});
+
+		return uri.deleteCharAt(uri.length() - 1).toString();
 	}
 
 	@Override
-	public ReplyResponseDTO.ReadAll readReplies(Authentication authentication, Long postId, Long lastReplyId) {
+	public ReplyResponseDTO.ReadAll readReplies(Authentication authentication, Long postId, int page) {
 		Post post = postRepository.findByIdAndDeleted(postId, false)
 			.orElseThrow(PostError.NOT_FOUND_POST::getException);
 
-		return postReplyService.readAll(authentication, postId, lastReplyId);
+		return postReplyService.readAll(authentication, postId, page);
 	}
 
 	@Override
@@ -268,44 +294,17 @@ public class PostServiceImpl implements PostService {
 			.build());
 
 		if (category.getName().equals("공지")) {
-			eventPublisher.publishEvent(NotifyRequestDTO.Global.builder()
-				.notifyType(NotifyType.NOTICE)
-				.content("새로운 공지가 등록되었습니다.")
-				.uri("/api/v1/post/" + post.getId())
-				.build());
+			eventPublisher.publishEvent(new NotifyRequestDTO.Global(
+				"새로운 공지가 등록되었습니다.",
+				NotifyType.NOTICE,
+				"/api/v1/post/" + post.getId(),
+				LocalDateTime.now()
+			));
 		}
 
 		// 사진 연동 작업이 필요함!!!
 		return null;
 	}
-//@Override
-//public List<String> create(Long memberId, PostRequestDTO.Create request) {
-//	Member member = memberRepository.findById(memberId)
-//			.orElseThrow(() -> new UsernameNotFoundException("Member not found"));
-//
-//	PostCategory category = postCategoryService.getByName(request.getCategory())
-//			.orElseThrow(PostError.NOT_FOUND_CATEGORY::getException);
-//
-//	Post post = postRepository.save(Post.builder()
-//			.title(request.getTitle())
-//			.content(request.getContent())
-//			.category(category)
-//			.rating(request.getRating())
-//			.hashtags(String.join(",", request.getHashtags()))
-//			.member(member)
-//			.build());
-//
-//	if (category.getName().equals("공지")) {
-//		eventPublisher.publishEvent(NotifyRequestDTO.Global.builder()
-//				.notifyType(NotifyType.NOTICE)
-//				.content("새로운 공지가 등록되었습니다.")
-//				.uri("/api/v1/post/" + post.getId())
-//				.build());
-//	}
-//
-//	// 사진 연동 작업이 필요함!!!
-//	return null;
-//}
 
 	@Override
 	public void createReply(Authentication authentication, Long postId, PostRequestDTO.CreateReply request) {
@@ -318,9 +317,7 @@ public class PostServiceImpl implements PostService {
 
 		Member member = memberService.getAuthenticatedMember(authentication);
 
-		Reply reply = replyService.create(request, member);
-
-		postReplyService.create(post, reply);
+		postReplyService.create(post, new ReplyRequestDTO.Create(request.getParentId(), request.getContent(), member));
 	}
 
 	@Override
@@ -349,7 +346,7 @@ public class PostServiceImpl implements PostService {
 
 		Member member = memberService.getAuthenticatedMember(authentication);
 
-		if (!post.getMember().getId().equals(member.getId())) {
+		if (!member.getRole().equals(Role.ROLE_ADMIN) && !post.getMember().getId().equals(member.getId())) {
 			throw PostError.UNAUTHORIZED_DELETE.getException();
 		}
 
@@ -365,7 +362,7 @@ public class PostServiceImpl implements PostService {
 
 		Member member = memberService.getAuthenticatedMember(authentication);
 
-		if (!member.getRole().equals("ROLE_ADMIN")) {
+		if (!member.getRole().equals(Role.ROLE_ADMIN) && member.getId() != post.getMember().getId()) {
 			throw PostError.UNAUTHORIZED_RESTORE.getException();
 		}
 
@@ -379,7 +376,7 @@ public class PostServiceImpl implements PostService {
 	}
 
 	@Override
-	public PostResponseDTO.ToggleLikes toggleLikes(Authentication authentication, Long postId) {
+	public PostResponseDTO.LikeStatus toggleLikes(Authentication authentication, Long postId) {
 		if (!authentication.isAuthenticated()) {
 			throw PostError.UNAUTHORIZED_TOGGLE_LIKES.getException();
 		}
@@ -391,7 +388,7 @@ public class PostServiceImpl implements PostService {
 
 		String likesKey = POST_LIKES_PREFIX_KEY + postId;
 		String unlikesKey = POST_UNLIKES_PREFIX_KEY + postId;
-		boolean isLiked = isCurrentMemberLiked(authentication, post);
+		boolean isLiked = getLiked(memberId, postId);
 
 		if (!isLiked) {
 			redisTemplate.opsForSet().add(likesKey, memberId.toString());
@@ -401,7 +398,32 @@ public class PostServiceImpl implements PostService {
 			redisTemplate.opsForSet().remove(likesKey, memberId.toString());
 		}
 
-		return new PostResponseDTO.ToggleLikes(!isLiked, getLikes(post.getId(), post.getLikes()));
+		return new PostResponseDTO.LikeStatus(!isLiked, getLikes(postId));
+	}
+
+	private boolean getLiked(Long memberId, Long postId) {
+		String likesKey = POST_LIKES_PREFIX_KEY + postId;
+		String unlikesKey = POST_UNLIKES_PREFIX_KEY + postId;
+
+		boolean isLiked = redisTemplate.opsForSet().isMember(likesKey, memberId.toString());
+		boolean isUnliked = redisTemplate.opsForSet().isMember(unlikesKey, memberId.toString());
+
+		if (!isLiked && !isUnliked) {
+			return postLikesRepository.existsByPostIdAndMemberId(postId, memberId);
+		}
+
+		return isLiked && !isUnliked;
+	}
+
+	private Long getLikes(Long postId) {
+		String likesKey = POST_LIKES_PREFIX_KEY + postId;
+		String unlikesKey = POST_UNLIKES_PREFIX_KEY + postId;
+
+		Long cachedLikes = redisTemplate.opsForSet().size(likesKey);
+		Long cachedUnlikes = redisTemplate.opsForSet().size(unlikesKey);
+		Long dbLikes = postRepository.findLikesById(postId);
+
+		return dbLikes + (cachedLikes != null ? cachedLikes : 0) - (cachedUnlikes != null ? cachedUnlikes : 0);
 	}
 
 	@Override
@@ -410,14 +432,18 @@ public class PostServiceImpl implements PostService {
 			throw PostError.UNAUTHORIZED_TOGGLE_SCRAP.getException();
 		}
 
-		Post post = postRepository.findByIdAndDeleted(postId, false)
-			.orElseThrow(PostError.NOT_FOUND_POST::getException);
+		Long authorId = postRepository.findByIdAndDeleted(postId, false)
+			.orElseThrow(PostError.NOT_FOUND_POST::getException).getMember().getId();
 
 		Long memberId = memberService.getAuthenticatedMember(authentication).getId();
 
+		if (authorId == memberId) {
+			throw PostError.BAD_REQUEST_TOGGLE_SCRAP.getException();
+		}
+
 		String scrapKey = POST_SCRAP_PREFIX_KEY + postId;
 		String unscrapKey = POST_UNSCRAP_PREFIX_KEY + postId;
-		boolean isScraped = isCurrentMemberScraped(authentication, post);
+		boolean isScraped = getScraped(memberId, postId);
 
 		if (!isScraped) {
 			redisTemplate.opsForSet().add(scrapKey, memberId.toString());
@@ -430,74 +456,33 @@ public class PostServiceImpl implements PostService {
 		return !isScraped;
 	}
 
-	private Long getLikes(Long postId, Long likes) {
-		String likesKey = StringUtils.join(POST_LIKES_PREFIX_KEY, postId);
-		String unlikesKey = StringUtils.join(POST_UNLIKES_PREFIX_KEY, postId);
+	private boolean getScraped(Long memberId, Long postId) {
+		String scrapKey = POST_SCRAP_PREFIX_KEY + postId;
+		String unscrapKey = POST_UNSCRAP_PREFIX_KEY + postId;
 
-		if (Boolean.TRUE.equals(redisTemplate.hasKey(likesKey))) {
-			likes += redisTemplate.opsForSet().size(likesKey);
+		boolean isScrap = redisTemplate.opsForSet().isMember(scrapKey, memberId.toString());
+		boolean isUnscrap = redisTemplate.opsForSet().isMember(unscrapKey, memberId.toString());
+
+		if (!isScrap && !isUnscrap) {
+			return postScrapRepository.existsByPostIdAndMemberId(postId, memberId);
 		}
 
-		if (Boolean.TRUE.equals(redisTemplate.hasKey(unlikesKey))) {
-			likes -= redisTemplate.opsForSet().size(unlikesKey);
-		}
-
-		return likes;
+		return isScrap && !isUnscrap;
 	}
 
-	private Long getViews(Long postId, Long views) {
-		if (Boolean.TRUE.equals(redisTemplate.hasKey(StringUtils.join(POST_VIEWS_PREFIX_KEY, postId)))) {
-			views += (Long)redisTemplate.opsForHash().get(POST_VIEWS_PREFIX_KEY, postId);
-		}
+	private Long getViews(Long postId) {
+		String cachedViewsStr = (String) redisTemplate.opsForHash().get(POST_VIEWS_PREFIX_KEY, postId.toString());
+		Long cachedViews = cachedViewsStr != null ? Long.parseLong(cachedViewsStr) : 0L;
+		Long dbViews = postRepository.findViewsById(postId);
 
-		return views;
+		return dbViews + cachedViews;
 	}
 
-	private void incrementViews(Long postId) {
-		redisTemplate.opsForHash().increment(POST_VIEWS_PREFIX_KEY, postId.toString(), 1);
-	}
-
-	private boolean isCurrentMemberLiked(Authentication authentication, Post post) {
-		String likesKey = StringUtils.join(POST_LIKES_PREFIX_KEY, post.getId());
-		String unlikesKey = StringUtils.join(POST_UNLIKES_PREFIX_KEY, post.getId());
-		Long memberId = memberService.getAuthenticatedMember(authentication).getId();
-
-		if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(likesKey, memberId))) {
-			return true;
-		}
-
-		if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(unlikesKey, memberId))) {
-			return false;
-		}
-
-		if (postLikesRepository.existsByPostIdAndMemberId(post.getId(), memberId)) {
-			return true;
-		}
-
-		return false;
-	}
-
-	private boolean isCurrentMemberScraped(Authentication authentication, Post post) {
-		String scrapKey = POST_SCRAP_PREFIX_KEY + post.getId();
-		String unscrapKey = POST_UNLIKES_PREFIX_KEY + post.getId();
-		Long memberId = memberService.getAuthenticatedMember(authentication).getId();
-
-		if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(scrapKey, memberId))) {
-			return true;
-		}
-
-		if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(unscrapKey, memberId))) {
-			return false;
-		}
-
-		if (postScrapRepository.existsByPostIdAndMemberId(post.getId(), memberId)) {
-			return true;
-		}
-
-		return false;
+	private void incrementViewsCache(Long postId) {
+		redisTemplate.opsForValue().increment(POST_VIEWS_PREFIX_KEY + postId, 1);
 	}
 
 	private Pageable getPageable(int size, Sort sort) {
-		return PageRequest.of(0, size, sort);
+		return PageRequest.of(1, size, sort);
 	}
 }

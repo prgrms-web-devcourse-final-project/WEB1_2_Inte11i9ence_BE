@@ -5,20 +5,21 @@ import java.time.LocalDateTime;
 import com.prgrmsfinal.skypedia.post.entity.key.PostReplyId;
 import com.prgrmsfinal.skypedia.reply.entity.Reply;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Getter
+@Data
 public class PostReply {
 	@EmbeddedId
 	private PostReplyId id;
@@ -31,5 +32,6 @@ public class PostReply {
 	@MapsId("replyId")
 	private Reply reply;
 
+	@Column(insertable = false, updatable = false)
 	private LocalDateTime repliedAt;
 }
