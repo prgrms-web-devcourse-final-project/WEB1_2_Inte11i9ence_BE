@@ -96,7 +96,7 @@ public class ReplyScheduler {
 			? unlikesValues.stream().map(Long::parseLong).toList() : List.of();
 
 		for (Long memberId : unlikedMemberIds) {
-			replyLikesRepository.deleteByReplyIdAndReplyId(replyId, memberId);
+			replyLikesRepository.deleteByReplyIdAndMemberId(replyId, memberId);
 		}
 
 		Set<Long> likedMemberIdsInDB = replyLikesRepository.findMemberIdsByReplyId(replyId);
