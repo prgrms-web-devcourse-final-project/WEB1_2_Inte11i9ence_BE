@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS member
 (
     id            BIGINT AUTO_INCREMENT PRIMARY KEY,
     oauth_id      VARCHAR(255)       NOT NULL,
+    name          VARCHAR(255)       NOT NULL,
     username      VARCHAR(20) UNIQUE NOT NULL,
     name          VARCHAR(30)        NOT NULL,
     email         VARCHAR(50)        NOT NULL,
@@ -25,6 +26,7 @@ CREATE TABLE IF NOT EXISTS notify
     content     VARCHAR(255) NOT NULL,
     notify_type VARCHAR(20)  NOT NULL,
     uri         VARCHAR(255) NOT NULL,
+    viewed      TINYINT(1)   NOT NULL DEFAULT '0',
     sent_at     TIMESTAMP    NOT NULL,
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -135,7 +137,7 @@ CREATE TABLE IF NOT EXISTS post_reply
 (
     post_id    BIGINT NOT NULL,
     reply_id   BIGINT NOT NULL,
-    replied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    replied_at TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (post_id, reply_id),
     FOREIGN KEY (post_id) REFERENCES post (id) ON DELETE CASCADE,
     FOREIGN KEY (reply_id) REFERENCES reply (id) ON DELETE CASCADE

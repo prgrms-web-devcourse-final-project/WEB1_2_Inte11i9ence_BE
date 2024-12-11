@@ -36,7 +36,7 @@ public class Notify {
 
 	private String uri;
 
-	private boolean read;
+	private boolean viewed;
 
 	@ManyToOne
 	@JoinColumn(name = "member_id")
@@ -51,6 +51,6 @@ public class Notify {
 	private LocalDateTime sentAt;
 
 	public void check() {
-		this.read = true;
+		this.viewed = true;
 	}
 }

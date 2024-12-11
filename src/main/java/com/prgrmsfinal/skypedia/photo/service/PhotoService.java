@@ -7,17 +7,15 @@ import com.prgrmsfinal.skypedia.photo.dto.PhotoRequestDTO;
 import com.prgrmsfinal.skypedia.photo.dto.PhotoResponseDTO;
 
 public interface PhotoService {
-	String createPhotoURL(PhotoDTO photoDTO);
 
-	List<String> createPhotoUrlList(List<PhotoDTO> photoDTOs);
-
-	String readPhotoURL(Long photoId);
-
+	//리퀘스트dto로 업로드된 값들을 가져와 id, url을 List로 반환
+	List<PhotoResponseDTO.Info> createPhotoUrlList(List<PhotoRequestDTO.Upload> photoDTOs);
+	
 	List<String> readPhotoUrlList(List<Long> photoId);
 
 	List<String> modifyPhotoUrlList(List<PhotoDTO> photoDTOs);
-	
-	boolean checkContentType(PhotoDTO photoDTO);
+
+	boolean checkContentType(PhotoRequestDTO.Upload photoDTO);
 
 	List<PhotoResponseDTO.Info> readPhotosByPostId(Long postId);
 

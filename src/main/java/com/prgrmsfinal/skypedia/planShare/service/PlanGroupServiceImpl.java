@@ -263,9 +263,9 @@ public class PlanGroupServiceImpl implements PlanGroupService {
 
 		Member member = memberService.getAuthenticatedMember(authentication);
 
-		Reply reply = replyService.create(groupCreateReply, member);
+		// Reply reply = replyService.create(groupCreateReply, member);
 
-		planGroupReplyService.create(planGroup, reply);
+		// planGroupReplyService.create(planGroup, reply);
 	}
 
 	@Override
