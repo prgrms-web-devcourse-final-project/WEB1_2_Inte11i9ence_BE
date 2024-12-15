@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS member
 (
     id            BIGINT AUTO_INCREMENT PRIMARY KEY,
     oauth_id      VARCHAR(255)       NOT NULL,
-    name          VARCHAR(255)       NOT NULL,
     username      VARCHAR(20) UNIQUE NOT NULL,
     name          VARCHAR(30)        NOT NULL,
     email         VARCHAR(50)        NOT NULL,
