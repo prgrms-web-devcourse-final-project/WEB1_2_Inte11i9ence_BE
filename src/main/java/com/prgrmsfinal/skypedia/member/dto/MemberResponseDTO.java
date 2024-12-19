@@ -1,37 +1,46 @@
 package com.prgrmsfinal.skypedia.member.dto;
 
 import com.prgrmsfinal.skypedia.member.entity.Member;
+import com.prgrmsfinal.skypedia.member.entity.Role;
 
-import lombok.Data;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-
-
-
-import java.time.LocalDateTime;
 
 @Getter
-@NoArgsConstructor
 public class MemberResponseDTO {    //회원 조회용 DTO
-    private Long id;
-    private String oauthId;
-    private String name;
-    private String email;
-    private String username;
-    private String role;
-    private String profileImage;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+	private final Long id;
+	private final String oauthId;
+	private final String name;
+	private final String email;
+	private final String username;
+	private final Role role;
+	private final String profileImage;
 
-    public MemberResponseDTO(Member member) {
-        this.id = member.getId();
-        this.oauthId = member.getOauthId();
-        this.name = member.getName();
-        this.email = member.getEmail();
-        this.username = member.getUsername();
-        this.role = member.getRole();
-        this.profileImage = member.getProfileImage();
-        this.createdAt = member.getCreatedAt();
-        this.updatedAt = member.getUpdatedAt();
-    }
+	public MemberResponseDTO(Member member) {
+		this.id = member.getId();
+		this.oauthId = member.getOauthId();
+		this.name = member.getName();
+		this.email = member.getEmail();
+		this.username = member.getUsername();
+		this.role = member.getRole();
+		this.profileImage = member.getProfileImage();
+	}
+
+	@Schema(title = "회원 정보 조회 DTO", description = "회원 정보 조회에 사용하는 DTO입니다.")
+	@Getter
+	@Builder
+	@AllArgsConstructor
+	public static class Info {
+		@Schema(title = "회원 ID", description = "회원 ID입니다.", example = "1")
+		private final Long id;
+
+		@Schema(title = "닉네임", description = "회원 닉네임입니다.", example = "닉네임1")
+		private final String username;
+
+		@Schema(title = "사진 URL", description = "사진 URL입니다.", minimum = "1", example = "25")
+		private final String profileUrl;
+
+	}
 }
