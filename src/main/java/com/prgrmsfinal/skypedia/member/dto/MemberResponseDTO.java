@@ -33,6 +33,9 @@ public class MemberResponseDTO {    //회원 조회용 DTO
 	@Builder
 	@AllArgsConstructor
 	public static class Info {
+		@Schema(title = "회원 ID", description = "회원 ID입니다.", example = "1")
+		private final Long id;
+
 		@Schema(title = "닉네임", description = "회원 닉네임입니다.", example = "닉네임1")
 		private final String username;
 

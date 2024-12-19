@@ -226,8 +226,8 @@ CREATE TABLE IF NOT EXISTS `chat_message` (
 `content` varchar(255) NOT NULL,
 `created_at` datetime(6) NOT NULL,
 `read_at` datetime(6) DEFAULT NULL,
- `sender_id` bigint NOT NULL,
-  `status` varchar(255) NOT NULL,
+`sender_id` bigint NOT NULL,
+`status` varchar(255) NOT NULL,
 `chat_room_id` bigint NOT NULL,
 PRIMARY KEY (`id`),
  KEY `FKc8p1hhbh0jkq9yj4bxdh4fgty` (`chat_room_id`),
@@ -235,3 +235,14 @@ KEY `FKmhgucpbdwb4b4l4h91fg0x7a8` (`sender_id`),
 CONSTRAINT `FKc8p1hhbh0jkq9yj4bxdh4fgty` FOREIGN KEY (`chat_room_id`) REFERENCES `chat_room` (`id`),
 CONSTRAINT `FKmhgucpbdwb4b4l4h91fg0x7a8` FOREIGN KEY (`sender_id`) REFERENCES `member` (`id`)
 );
+
+CREATE TABLE IF NOT EXISTS refresh_token(
+    member_id BIGINT NOT NULL,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    expiry_date TIMESTAMP NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    PRIMARY KEY (member_id),
+    FOREIGN KEY (member_id) REFERENCES member(id)
+);
+
