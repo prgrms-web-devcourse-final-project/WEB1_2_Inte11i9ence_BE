@@ -1,11 +1,22 @@
 package com.prgrmsfinal.skypedia.post.service;
 
-import com.prgrmsfinal.skypedia.post.entity.PostCategory;
-
+import java.util.List;
 import java.util.Optional;
 
-public interface PostCategoryService {
-    Optional<PostCategory> getByName(String name);
+import org.springframework.security.core.Authentication;
 
-    boolean existsByName(String name);
+import com.prgrmsfinal.skypedia.post.dto.PostCategoryRequestDTO;
+import com.prgrmsfinal.skypedia.post.dto.PostCategoryResponseDTO;
+import com.prgrmsfinal.skypedia.post.entity.PostCategory;
+
+public interface PostCategoryService {
+	PostCategoryResponseDTO.Read read(String name);
+
+	List<PostCategoryResponseDTO.Read> readAll();
+
+	void create(Authentication authentication, PostCategoryRequestDTO.Create request);
+
+	Optional<PostCategory> getByName(String name);
+
+	boolean existsByName(String name);
 }
