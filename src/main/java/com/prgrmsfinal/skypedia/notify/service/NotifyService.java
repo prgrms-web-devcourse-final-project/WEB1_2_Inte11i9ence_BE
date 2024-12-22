@@ -15,7 +15,7 @@ public interface NotifyService {
 
 	void send(String username, Object data);
 
-	void saves(List<Notify> notifies);
+	void saveAll(List<Notify> notifies);
 
 	void save(Notify notify);
 
