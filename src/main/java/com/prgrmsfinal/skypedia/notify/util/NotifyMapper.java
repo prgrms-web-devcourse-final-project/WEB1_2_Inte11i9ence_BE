@@ -13,6 +13,7 @@ public class NotifyMapper {
 
 	public static NotifyResponseDTO.Send toDTO(Notify notify) {
 		return NotifyResponseDTO.Send.builder()
+			.id(notify.getId())
 			.content(notify.getContent())
 			.type(notify.getNotifyType().getName())
 			.sentAt(notify.getSentAt())
