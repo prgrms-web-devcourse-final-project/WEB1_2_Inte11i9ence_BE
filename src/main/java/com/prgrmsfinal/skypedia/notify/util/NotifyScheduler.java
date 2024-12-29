@@ -78,7 +78,7 @@ public class NotifyScheduler {
 			.map(dto -> NotifyMapper.toEntity((NotifyRequestDTO.User)dto))
 			.toList();
 
-		notifyService.saves(notifies);
+		notifyService.saveAll(notifies);
 	}
 
 	private void saveToDB(Object dto) {

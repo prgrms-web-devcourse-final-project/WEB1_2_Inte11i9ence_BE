@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -15,6 +14,9 @@ public class NotifyResponseDTO {
 	@Getter
 	@Schema(title = "알림 전송 응답 DTO", description = "알림 전송 응답에 사용하는 DTO 입니다.")
 	public static class Send {
+		@Schema(title = "알림 ID", description = "알림 ID입니다.", example = "1")
+		private final Long id;
+
 		@Schema(title = "알림 내용", description = "알림 내용입니다.", example = "새로운 공지가 등록되었습니다.")
 		private final String content;
 
@@ -32,9 +34,11 @@ public class NotifyResponseDTO {
 
 		@Builder
 		@JsonCreator
-		public Send(@JsonProperty("content") String content, @JsonProperty("type") String type
+		public Send(@JsonProperty("id") Long id, @JsonProperty("content") String content,
+			@JsonProperty("type") String type
 			, @JsonProperty("uri") String uri, @JsonProperty("sentAt") LocalDateTime sentAt
 			, @JsonProperty("viewed") boolean viewed) {
+			this.id = id;
 			this.content = content;
 			this.type = type;
 			this.uri = uri;

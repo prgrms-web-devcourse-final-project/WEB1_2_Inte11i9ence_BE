@@ -27,8 +27,8 @@ CREATE TABLE IF NOT EXISTS notify
     uri         VARCHAR(255) NOT NULL,
     viewed      TINYINT(1)   NOT NULL DEFAULT '0',
     sent_at     TIMESTAMP    NOT NULL,
-    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at  TIMESTAMP             DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP             DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CHECK (notify_type IN ('REPLY', 'CHAT', 'NOTICE')),
     FOREIGN KEY (member_id) REFERENCES member (id)
 );
@@ -136,7 +136,7 @@ CREATE TABLE IF NOT EXISTS post_reply
 (
     post_id    BIGINT NOT NULL,
     reply_id   BIGINT NOT NULL,
-    replied_at TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
+    replied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (post_id, reply_id),
     FOREIGN KEY (post_id) REFERENCES post (id) ON DELETE CASCADE,
     FOREIGN KEY (reply_id) REFERENCES reply (id) ON DELETE CASCADE
@@ -203,35 +203,48 @@ CREATE TABLE IF NOT EXISTS plan_group_likes
 );
 
 
-CREATE TABLE IF NOT EXISTS `chat_room` (
-`id` bigint NOT NULL AUTO_INCREMENT,
-`created_at` datetime(6) NOT NULL,
-`creator_id` bigint NOT NULL,
-`is_creator_blocked` bit(1) NOT NULL,
-`is_creator_left` bit(1) NOT NULL,
-`is_participant_blocked` bit(1) NOT NULL,
-`is_participant_left` bit(1) NOT NULL,
-`participant_id` bigint NOT NULL,
-`status` varchar(255) NOT NULL,
-`updated_at` datetime(6) NOT NULL,
-PRIMARY KEY (`id`),
-KEY `FKqe4n7vg39yjglbqx2gdbj0f8f` (`creator_id`),
-KEY `FKj2d4x1n7hgb6uxkrm7bx0x7u1` (`participant_id`),
-CONSTRAINT `FKj2d4x1n7hgb6uxkrm7bx0x7u1` FOREIGN KEY (`participant_id`) REFERENCES `member` (`id`),
-CONSTRAINT `FKqe4n7vg39yjglbqx2gdbj0f8f` FOREIGN KEY (`creator_id`) REFERENCES `member` (`id`)
+CREATE TABLE IF NOT EXISTS `chat_room`
+(
+    `id`                     bigint       NOT NULL AUTO_INCREMENT,
+    `created_at`             datetime(6)  NOT NULL,
+    `creator_id`             bigint       NOT NULL,
+    `is_creator_blocked`     bit(1)       NOT NULL,
+    `is_creator_left`        bit(1)       NOT NULL,
+    `is_participant_blocked` bit(1)       NOT NULL,
+    `is_participant_left`    bit(1)       NOT NULL,
+    `participant_id`         bigint       NOT NULL,
+    `status`                 varchar(255) NOT NULL,
+    `updated_at`             datetime(6)  NOT NULL,
+    PRIMARY KEY (`id`),
+    KEY `FKqe4n7vg39yjglbqx2gdbj0f8f` (`creator_id`),
+    KEY `FKj2d4x1n7hgb6uxkrm7bx0x7u1` (`participant_id`),
+    CONSTRAINT `FKj2d4x1n7hgb6uxkrm7bx0x7u1` FOREIGN KEY (`participant_id`) REFERENCES `member` (`id`),
+    CONSTRAINT `FKqe4n7vg39yjglbqx2gdbj0f8f` FOREIGN KEY (`creator_id`) REFERENCES `member` (`id`)
 );
 
-CREATE TABLE IF NOT EXISTS `chat_message` (
-`id` bigint NOT NULL AUTO_INCREMENT,
-`content` varchar(255) NOT NULL,
-`created_at` datetime(6) NOT NULL,
-`read_at` datetime(6) DEFAULT NULL,
- `sender_id` bigint NOT NULL,
-  `status` varchar(255) NOT NULL,
-`chat_room_id` bigint NOT NULL,
-PRIMARY KEY (`id`),
- KEY `FKc8p1hhbh0jkq9yj4bxdh4fgty` (`chat_room_id`),
-KEY `FKmhgucpbdwb4b4l4h91fg0x7a8` (`sender_id`),
-CONSTRAINT `FKc8p1hhbh0jkq9yj4bxdh4fgty` FOREIGN KEY (`chat_room_id`) REFERENCES `chat_room` (`id`),
-CONSTRAINT `FKmhgucpbdwb4b4l4h91fg0x7a8` FOREIGN KEY (`sender_id`) REFERENCES `member` (`id`)
+CREATE TABLE IF NOT EXISTS `chat_message`
+(
+    `id`           bigint       NOT NULL AUTO_INCREMENT,
+    `content`      varchar(255) NOT NULL,
+    `created_at`   datetime(6)  NOT NULL,
+    `read_at`      datetime(6) DEFAULT NULL,
+    `sender_id`    bigint       NOT NULL,
+    `status`       varchar(255) NOT NULL,
+    `chat_room_id` bigint       NOT NULL,
+    PRIMARY KEY (`id`),
+    KEY `FKc8p1hhbh0jkq9yj4bxdh4fgty` (`chat_room_id`),
+    KEY `FKmhgucpbdwb4b4l4h91fg0x7a8` (`sender_id`),
+    CONSTRAINT `FKc8p1hhbh0jkq9yj4bxdh4fgty` FOREIGN KEY (`chat_room_id`) REFERENCES `chat_room` (`id`),
+    CONSTRAINT `FKmhgucpbdwb4b4l4h91fg0x7a8` FOREIGN KEY (`sender_id`) REFERENCES `member` (`id`)
+);
+
+CREATE TABLE IF NOT EXISTS refresh_token
+(
+    member_id   BIGINT       NOT NULL,
+    token       VARCHAR(255) NOT NULL UNIQUE,
+    expiry_date TIMESTAMP    NOT NULL,
+    created_at  TIMESTAMP    NOT NULL,
+    updated_at  TIMESTAMP    NOT NULL,
+    PRIMARY KEY (member_id),
+    FOREIGN KEY (member_id) REFERENCES member (id)
 );

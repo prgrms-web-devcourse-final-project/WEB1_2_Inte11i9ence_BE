@@ -99,7 +99,7 @@ public class NotifyServiceImpl implements NotifyService {
 	}
 
 	@Override
-	public void saves(List<Notify> notifies) {
+	public void saveAll(List<Notify> notifies) {
 		notifyRepository.saveAll(notifies);
 	}
 

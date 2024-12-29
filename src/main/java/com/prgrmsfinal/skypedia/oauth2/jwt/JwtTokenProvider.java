@@ -7,6 +7,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,6 +36,7 @@ public class JwtTokenProvider {
     @Value("${jwt.access-token-validity-in-seconds}")
     private long accessTokenValidityInSeconds;
 
+    @Getter
     @Value("${jwt.refresh-token-validity-in-seconds}")
     private long refreshTokenValidityInSeconds;
 
@@ -56,6 +58,7 @@ public class JwtTokenProvider {
     public String createRefreshToken(Member member) {
         Claims claims = Jwts.claims()
                 .add("id", member.getId())
+                .add("role", member.getRole().name())
                 .build();
 
         return createToken(claims, refreshTokenValidityInSeconds);

@@ -18,6 +18,7 @@ import java.util.UUID;
 public class GoogleOAuth2Service {
     private final MemberRepository memberRepository;
     private final JwtTokenProvider jwtTokenProvider;
+    private final RefreshTokenService refreshTokenService;
 
     public TokenResponse authenticateGoogleUser(Map<String, Object> attributes) {
         log.info("Google attributes: {}", attributes);
@@ -42,6 +43,8 @@ public class GoogleOAuth2Service {
 
         String accessToken = jwtTokenProvider.createAccessToken(member);
         String refreshToken = jwtTokenProvider.createRefreshToken(member);
+
+        refreshTokenService.saveRefreshToken(member, refreshToken);
 
         return new TokenResponse(accessToken, refreshToken);
     }

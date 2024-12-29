@@ -1,6 +1,6 @@
 package com.prgrmsfinal.skypedia.oauth2.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.prgrmsfinal.skypedia.oauth2.dto.TokenResponse;
 import com.prgrmsfinal.skypedia.oauth2.jwt.JwtAuthenticationFilter;
 import com.prgrmsfinal.skypedia.oauth2.jwt.JwtTokenProvider;
@@ -49,9 +49,9 @@ public class SecurityConfig {
 									+ authException.getMessage() + "\"}");
 						}))
 				.authorizeHttpRequests(auth -> auth
-						.requestMatchers("/login/oauth2/code/**", "/oauth2/authorization/**",
-									"/error", "/login", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**",
-									"/webjars/**", "/actuator/**", "/naver").permitAll()
+						.requestMatchers("/login/oauth2/code/**", "/oauth2/authorization/**", "/error", "/login",
+								"/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**",
+								"/webjars/**", "/actuator/**","/api/v1/auth/refresh").permitAll()
 						.requestMatchers(HttpMethod.GET,
 									"/api/v1/posts", "/api/v1/posts/{username}", "/api/v1/plan-group","/api/v1/notify",
 									"/api/v1/post-category","/api/v1/plan-detail**",
