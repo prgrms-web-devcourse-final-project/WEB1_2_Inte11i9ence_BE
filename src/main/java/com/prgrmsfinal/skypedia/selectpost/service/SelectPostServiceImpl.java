@@ -112,11 +112,6 @@ public class SelectPostServiceImpl implements SelectPostService {
 		// PhotoService를 통해 사진 업로드 및 URL 받기
 		List<PhotoResponseDTO.Info> photoInfos = photoService.createPhotoUrlList(selectPostRequestDto.getUploads());
 
-		// presigned URL 목록 생성
-		List<String> presignedUrls = photoInfos.stream()
-			.map(PhotoResponseDTO.Info::getPhotoUrl)
-			.collect(Collectors.toList());
-
 		//photo 생성된거에서 id 끄집어오기
 		List<Long> photoIds = photoInfos.stream()
 			.map(PhotoResponseDTO.Info::getId)
