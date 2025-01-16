@@ -1,95 +1,108 @@
 package com.prgrmsfinal.skypedia.planShare.service;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.ClientResponse;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import com.prgrmsfinal.skypedia.global.exception.CommonException;
+import com.prgrmsfinal.skypedia.planShare.exception.PlanError;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class GoogleMapServiceImpl implements GoogleMapService {
 
-	@Value("${google.api.key}") // 환경 설정에서 API 키 주입
+	@Value("${google.api.key}")
 	private String apiKey;
 
-	private final RestTemplate restTemplate;
+	private final WebClient webClient;
 
-	// GeocodingAPI - 주소로 위도와 경도를 가져오는 기능
-	@Override
-	public Map<String, Double> getCoordinates(String address) {
-		try {
-			String geocodingUrl = String.format(
-				"https://maps.googleapis.com/maps/api/geocode/json?address=%s&key=%s",
-				URLEncoder.encode(address, StandardCharsets.UTF_8), apiKey);
-
-			Map<String, Object> response = fetchFromApi(geocodingUrl);
-
-			Map<String, Object> location = extractLocation(response);
-
-			return Map.of(
-				"latitude", (Double)location.get("lat"),
-				"longitude", (Double)location.get("lng"));
-		} catch (Exception e) {
-			log.error("Error fetching coordinates: {}", e.getMessage());
-			throw new RuntimeException("Failed to fetch coordinates from Google API", e);
+	public String fetchPlaceImage(String location) {
+		if (location == null || location.trim().isEmpty()) {
+			throw new IllegalArgumentException("Input address or place name must not be empty.");
 		}
+
+		Map<String, Object> locationData = fetchCoordinates(location);
+		String placeId = (String)locationData.get("placeId");
+
+		return fetchPlacePhotoUrl(placeId);
 	}
 
-	// PlaceAPI - 장소 ID로 장소 이미지 가져옴
-	@Override
-	public String getPlacePhoto(String placeId) {
-		String detailsUrl = String.format(
-			"https://maps.googleapis.com/maps/api/place/details/json?place_id=%s&key=%s",
-			placeId, apiKey);
+	public Map<String, Object> fetchCoordinates(String address) {
+		String geocodingUrl = "/maps/api/geocode/json";
 
-		Map<String, Object> response = fetchFromApi(detailsUrl);
+		Map<String, Object> response = fetchFromApi(geocodingUrl, Map.of("address", address, "key", apiKey));
 
-		return extraPhotoReference(response);
-	}
-
-	// 공통 API 호출 및 응답 처리 메서드
-	private Map<String, Object> fetchFromApi(String url) {
-		ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
-
-		if (response.getStatusCode() == HttpStatus.OK) {
-			Map<String, Object> body = response.getBody();
-			if (body != null && "OK".equals(body.get("status"))) {
-				return body;
-			}
+		List<Map<String, Object>> results = (List<Map<String, Object>>)response.get("results");
+		if (results == null || results.isEmpty()) {
+			throw new RuntimeException("No results found for the address: " + address);
 		}
-		throw new IllegalArgumentException("Failed to fetch valid response from Google API");
+
+		Map<String, Object> geometry = (Map<String, Object>)results.get(0).get("geometry");
+		Map<String, Object> location = (Map<String, Object>)geometry.get("location");
+
+		String placeId = (String)results.get(0).get("place_id");
+
+		return Map.of(
+			"latitude", location.get("lat"),
+			"longitude", location.get("lng"),
+			"placeId", placeId
+		);
 	}
 
-	// 위치 정보 추출
-	private Map<String, Object> extractLocation(Map<String, Object> body) {
-		List<Map<String, Object>> results = (List<Map<String, Object>>)body.get("results");
-		if (results != null && !results.isEmpty()) {
-			Map<String, Object> geometry = (Map<String, Object>)results.get(0).get("geometry");
-			return (Map<String, Object>)geometry.get("location");
-		}
-		throw new IllegalArgumentException("No results found for the given address.");
-	}
+	private String fetchPlacePhotoUrl(String placeId) {
+		String detailsUrl = "/maps/api/place/details/json";
 
-	// 사진 참조 URL 추출
-	private String extraPhotoReference(Map<String, Object> body) {
-		Map<String, Object> result = (Map<String, Object>)body.get("result");
+		Map<String, Object> response = fetchFromApi(detailsUrl, Map.of("place_id", placeId, "key", apiKey));
+
+		Map<String, Object> result = (Map<String, Object>)response.get("result");
 		List<Map<String, Object>> photos = (List<Map<String, Object>>)result.get("photos");
-		if (photos != null && !photos.isEmpty()) {
-			return String.format(
-				"https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=%s&key=%s",
-				photos.get(0).get("photo_reference"), apiKey);
+		if (photos == null || photos.isEmpty()) {
+			throw new RuntimeException("No photos found for the place ID: " + placeId);
 		}
-		throw new IllegalArgumentException("No photos found for the given place ID");
+
+		String photoReference = (String)photos.get(0).get("photo_reference");
+
+		return String.format(
+			"https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=%s&key=%s",
+			photoReference, apiKey
+		);
+	}
+
+	private Map<String, Object> fetchFromApi(String endpoint, Map<String, String> queryParams) {
+		return webClient.get()
+			.uri(uriBuilder -> {
+				uriBuilder.path(endpoint);
+				queryParams.forEach(uriBuilder::queryParam);
+				return uriBuilder.build();
+			})
+			.retrieve()
+			.onStatus(status -> status.is4xxClientError(),
+				response -> handleError(response, PlanError.BAD_REQUEST)) // HttpStatus 비교
+			.onStatus(status -> status.is5xxServerError(),
+				response -> handleError(response, PlanError.NOT_FETCHED)) // HttpStatus 비교
+			.bodyToMono(Map.class)
+			.block();
+	}
+
+	private Mono<Throwable> handleError(ClientResponse response, PlanError planError) {
+		return response.bodyToMono(String.class)
+			.map(message -> {
+				log.error("Error occurred: {} / Detail: {}", planError.getException().getMessage(), message);
+
+				return new CommonException(
+					planError.getException().getCode(),
+					planError.getException().getMessage() + " / Detail: " + message
+				);
+			});
 	}
 }
 

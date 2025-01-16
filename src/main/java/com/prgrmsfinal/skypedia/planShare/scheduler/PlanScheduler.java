@@ -1,13 +1,9 @@
 package com.prgrmsfinal.skypedia.planShare.scheduler;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -52,20 +48,25 @@ public class PlanScheduler {
 	@Value("${planGroup.unscrap.prefix.key}")
 	private String PLAN_GROUP_UNSCRAP_PREFIX_KEY;
 
-	/**
-	 * PlanGroup 조회수 동기화
-	 */
 	@Transactional
 	@Scheduled(fixedRate = 10000)
 	public void syncViewsCacheToDB() {
 		Map<Object, Object> viewsMap = redisTemplate.opsForHash().entries(PLAN_GROUP_VIEWS_PREFIX_KEY);
 
-		viewsMap.entrySet().forEach(e -> {
-			Long id = Long.parseLong(e.getKey().toString());
-			Long views = Long.parseLong(e.getValue().toString());
+		viewsMap.forEach((key, value) -> {
+			try {
+				Long planGroupId = Long.parseLong(key.toString());
+				Long views = Long.parseLong(value.toString());
 
-			if (planGroupRepository.incrementViewsById(id, views) == 0) {
-				log.warn("DB Sync error: PlanGroup not exists. (planGroupId={}, views={})", id, views);
+				int updatedRows = planGroupRepository.incrementViewsById(planGroupId, views);
+				if (updatedRows == 0) {
+					throw new NoSuchElementException(
+						String.format("PlanGroup with ID %d does not exist in the database.", planGroupId));
+				}
+
+				log.info("Synced views for PlanGroup ID = {}, Views = {}", planGroupId, views);
+			} catch (Exception e) {
+				log.warn("Error syncing views to DB: {}", e.getMessage());
 			}
 		});
 
@@ -75,43 +76,38 @@ public class PlanScheduler {
 	@Transactional
 	@Scheduled(fixedRate = 10000)
 	public void syncLikesCacheToDB() {
-		Set<String> keySet = redisTemplate.keys(StringUtils.join(PLAN_GROUP_LIKES_PREFIX_KEY, "*"));
+		Set<String> keys = redisTemplate.keys(String.format("%s*", PLAN_GROUP_LIKES_PREFIX_KEY));
 
-		if (keySet != null) {
-			keySet.forEach(key -> {
-				Long planGroupId = Long.parseLong(key.replace(PLAN_GROUP_LIKES_PREFIX_KEY, ""));
-				AtomicLong likes = new AtomicLong(redisTemplate.opsForSet().size(key));
-				Set<String> values = redisTemplate.opsForSet().members(key);
+		if (keys != null && !keys.isEmpty()) {
+			keys.forEach(key -> {
+				Long planGroupId = extractIdFromKey(key, PLAN_GROUP_LIKES_PREFIX_KEY);
+				Set<String> memberIds = redisTemplate.opsForSet().members(key);
 
-				values.forEach(value -> {
-					Long memberId = Long.parseLong(value);
+				if (memberIds != null) {
+					memberIds.forEach(memberIdStr -> {
+						Long memberId = Long.parseLong(memberIdStr);
+						try {
+							if (planGroupLikesRepository.existsByPlanGroupIdAndMemberId(planGroupId, memberId)) {
+								log.warn("Like already exists: PlanGroup ID = {}, Member ID = {}", planGroupId,
+									memberId);
+								return;
+							}
 
-					try {
-						if (planGroupLikesRepository.existsByPlanGroupIdAndMemberId(planGroupId, memberId)) {
-							likes.decrementAndGet();
-							throw new IllegalArgumentException(StringUtils.join(
-								"Data already exists. [planGroupId=", planGroupId, ", memberId=", memberId, "]"));
+							Member member = fetchMember(memberId);
+							PlanGroup planGroup = fetchPlanGroup(planGroupId);
+
+							planGroupLikesRepository.save(
+								PlanGroupLikes.builder().planGroup(planGroup).member(member).build()
+							);
+
+							log.info("Synced like for PlanGroup ID = {}, Member ID = {}", planGroupId, memberId);
+						} catch (Exception e) {
+							log.warn("Error syncing like to DB: {}", e.getMessage());
 						}
+					});
+				}
 
-						Member member = memberRepository.findById(memberId).orElseThrow(() ->
-							new NoSuchElementException(
-								StringUtils.join("Invalid member id. [memberId=", memberId, "]")));
-
-						PlanGroup planGroup = planGroupRepository.findById(planGroupId).orElseThrow(() ->
-							new NoSuchElementException(
-								StringUtils.join("Invalid planGroup id. [planGroupId=", planGroupId, "]")));
-
-						planGroupLikesRepository.save(PlanGroupLikes.builder()
-							.planGroup(planGroup)
-							.member(member)
-							.build());
-					} catch (IllegalArgumentException | NoSuchElementException e) {
-						log.warn("DB Sync error: {}", e.getMessage());
-					}
-				});
-
-				redisTemplate.delete(StringUtils.join(PLAN_GROUP_LIKES_PREFIX_KEY, planGroupId));
-				planGroupRepository.incrementLikesById(planGroupId, likes.get());
+				redisTemplate.delete(key);
 			});
 		}
 	}
@@ -119,73 +115,79 @@ public class PlanScheduler {
 	@Transactional
 	@Scheduled(fixedRate = 10000)
 	public void syncScrapCacheToDB() {
-		Set<String> scrapKeys = redisTemplate.keys(PLAN_GROUP_SCRAP_PREFIX_KEY + "*");
-		Set<String> unscrapKeys = redisTemplate.keys(PLAN_GROUP_UNSCRAP_PREFIX_KEY + "*");
+		syncScrapKeys(PLAN_GROUP_SCRAP_PREFIX_KEY, true);
+		syncScrapKeys(PLAN_GROUP_UNSCRAP_PREFIX_KEY, false);
+	}
 
-		if (scrapKeys != null) {
-			scrapKeys.forEach(key -> {
-				Long planGroupId = Long.parseLong(key.replace(PLAN_GROUP_SCRAP_PREFIX_KEY, ""));
-				Set<String> values = redisTemplate.opsForSet().members(key);
-				List<PlanGroupScrap> planGroupScraps = new ArrayList<>();
+	private void syncScrapKeys(String prefixKey, boolean isScrap) {
+		Set<String> keys = redisTemplate.keys(prefixKey + "*");
 
-				values.forEach(value -> {
-					Long memberId = Long.parseLong(value);
+		if (keys != null && !keys.isEmpty()) {
+			keys.forEach(key -> {
+				Long planGroupId = extractIdFromKey(key, prefixKey);
+				Set<String> memberIds = redisTemplate.opsForSet().members(key);
 
-					try {
-						if (planGroupScrapRepository.existsByPlanGroupIdAndMemberId(planGroupId, memberId)) {
-							throw new IllegalArgumentException(StringUtils.join(
-								"Data already exists. [planGroupId=", planGroupId, ", memberId=", memberId, "]"));
+				if (memberIds != null) {
+					memberIds.forEach(memberIdStr -> {
+						Long memberId = Long.parseLong(memberIdStr);
+
+						try {
+							if (isScrap) {
+								syncScrap(planGroupId, memberId);
+							} else {
+								syncUnscrap(planGroupId, memberId);
+							}
+						} catch (Exception e) {
+							log.warn("Error syncing {} to DB: {}", isScrap ? "scrap" : "unscrap", e.getMessage());
 						}
+					});
+				}
 
-						Member member = memberRepository.findById(memberId).orElseThrow(() ->
-							new NoSuchElementException(
-								StringUtils.join("Invalid member id. [memberId=", memberId, "]")));
-
-						PlanGroup planGroup = planGroupRepository.findById(planGroupId).orElseThrow(() ->
-							new NoSuchElementException(
-								StringUtils.join("Invalid planGroup id. [planGroupId=", planGroupId, "]")));
-
-						planGroupScraps.add(PlanGroupScrap.builder()
-							.planGroup(planGroup)
-							.member(member)
-							.build());
-					} catch (IllegalArgumentException | NoSuchElementException e) {
-						log.warn("DB Sync error: {}", e.getMessage());
-					}
-				});
-
-				redisTemplate.delete(PLAN_GROUP_SCRAP_PREFIX_KEY + planGroupId);
-				planGroupScrapRepository.saveAll(planGroupScraps);
+				redisTemplate.delete(key);
 			});
 		}
+	}
 
-		if (unscrapKeys != null) {
-			unscrapKeys.forEach(key -> {
-				Long planGroupId = Long.parseLong(key.replace(PLAN_GROUP_UNSCRAP_PREFIX_KEY, ""));
-				Set<String> values = redisTemplate.opsForSet().members(key);
-
-				values.forEach(value -> {
-					Long memberId = Long.parseLong(value);
-
-					try {
-						if (!planGroupScrapRepository.existsByPlanGroupIdAndMemberId(planGroupId, memberId)) {
-							throw new IllegalArgumentException(StringUtils.join(
-								"Data not exists. [planGroupId=", planGroupId, ", memberId=", memberId, "]"));
-						}
-
-						planGroupScrapRepository.delete(
-							planGroupScrapRepository.findByPlanGroupIdAndMemberId(planGroupId, memberId)
-								.orElseThrow(() -> new NoSuchElementException(StringUtils.join(
-									"Invalid memberId or planGroupId. [planGroupId=", planGroupId, ", memberId=",
-									memberId, "]"))));
-					} catch (IllegalArgumentException | NoSuchElementException e) {
-						log.warn("DB Sync error: {}", e.getMessage());
-					}
-				});
-
-				redisTemplate.delete(StringUtils.join(PLAN_GROUP_UNSCRAP_PREFIX_KEY, planGroupId));
-			});
+	private void syncScrap(Long planGroupId, Long memberId) {
+		if (planGroupScrapRepository.existsByPlanGroupIdAndMemberId(planGroupId, memberId)) {
+			throw new IllegalArgumentException(
+				String.format("Scrap already exists: PlanGroup ID = %d, Member ID = %d", planGroupId, memberId));
 		}
+
+		Member member = fetchMember(memberId);
+		PlanGroup planGroup = fetchPlanGroup(planGroupId);
+
+		planGroupScrapRepository.save(
+			PlanGroupScrap.builder().planGroup(planGroup).member(member).build()
+		);
+
+		log.info("Synced scrap for PlanGroup ID = {}, Member ID = {}", planGroupId, memberId);
+	}
+
+	private void syncUnscrap(Long planGroupId, Long memberId) {
+		PlanGroupScrap scrap = planGroupScrapRepository.findByPlanGroupIdAndMemberId(planGroupId, memberId)
+			.orElseThrow(() -> new IllegalArgumentException(
+				String.format("Scrap not found: PlanGroup ID = %d, Member ID = %d", planGroupId, memberId)));
+
+		planGroupScrapRepository.delete(scrap);
+
+		log.info("Synced unscrap for PlanGroup ID = {}, Member ID = {}", planGroupId, memberId);
+	}
+
+	private Long extractIdFromKey(String key, String prefix) {
+		return Long.parseLong(key.replace(prefix, ""));
+	}
+
+	private Member fetchMember(Long memberId) {
+		return memberRepository.findById(memberId)
+			.orElseThrow(() -> new NoSuchElementException(
+				String.format("Member not found: ID = %d", memberId)));
+	}
+
+	private PlanGroup fetchPlanGroup(Long planGroupId) {
+		return planGroupRepository.findById(planGroupId)
+			.orElseThrow(() -> new NoSuchElementException(
+				String.format("PlanGroup not found: ID = %d", planGroupId)));
 	}
 }
 

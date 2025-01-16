@@ -1,10 +1,9 @@
 package com.prgrmsfinal.skypedia.planShare.controller;
 
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,7 +14,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.prgrmsfinal.skypedia.planShare.dto.RegionDTO;
+import com.prgrmsfinal.skypedia.planShare.dto.RegionRequestDTO;
+import com.prgrmsfinal.skypedia.planShare.dto.RegionResponseDTO;
 import com.prgrmsfinal.skypedia.planShare.service.RegionService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -53,8 +53,34 @@ public class RegionController {
 	)
 	@GetMapping
 	@ResponseStatus(HttpStatus.OK)
-	public List<RegionDTO> readAll() {
+	public List<RegionResponseDTO> readAll() {
 		return regionService.readAll();
+	}
+
+	@Operation(
+		summary = "지역 카테고리 단일 조회",
+		description = "단일 지역 카테고리의 게시물을 조회합니다.",
+		responses = {
+			@ApiResponse(
+				responseCode = "200",
+				description = "해당 지역을 조회했습니다.",
+				content = @Content(
+					mediaType = "application/json"
+				)
+			),
+			@ApiResponse(
+				responseCode = "404",
+				description = "해당 지역은 존재하지 않습니다.",
+				content = @Content(
+					mediaType = "application/json"
+				)
+			)
+		}
+	)
+	@GetMapping("/{regionName}")
+	@ResponseStatus(HttpStatus.OK)
+	public RegionResponseDTO read(@PathVariable("regionName") String regionName) {
+		return regionService.read(regionName);
 	}
 
 	@Operation(
@@ -74,9 +100,9 @@ public class RegionController {
 		}
 	)
 	@PostMapping
-	public ResponseEntity<RegionDTO> create(@Valid @RequestBody RegionDTO regionDTO) {
-		RegionDTO createdRegion = regionService.register(regionDTO);
-		return ResponseEntity.status(HttpStatus.CREATED).body(createdRegion);
+	@ResponseStatus(HttpStatus.CREATED)
+	public void create(Authentication authentication, @Valid @RequestBody RegionRequestDTO regionRequestDTO) {
+		regionService.create(authentication, regionRequestDTO);
 	}
 
 	@Operation(
@@ -109,10 +135,9 @@ public class RegionController {
 	)
 	@PutMapping("/{id}")
 	@ResponseStatus(HttpStatus.OK)
-	public RegionDTO update(@PathVariable @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long id,
-		@Valid @RequestBody RegionDTO regionDTO) {
-		regionDTO.setId(id);
-		return regionService.update(regionDTO);
+	public RegionRequestDTO update(@PathVariable @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long id,
+		@Valid @RequestBody RegionRequestDTO regionRequestDTO) {
+		return regionService.update(regionRequestDTO);
 	}
 
 	@Operation(
@@ -145,8 +170,7 @@ public class RegionController {
 	)
 	@DeleteMapping("/{id}")
 	@ResponseStatus(HttpStatus.OK)
-	public Map<String, String> delete(@PathVariable("id") @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long id) {
+	public void delete(@PathVariable("id") @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long id) {
 		regionService.delete(id);
-		return Map.of("message", "삭제 완료");
 	}
 }

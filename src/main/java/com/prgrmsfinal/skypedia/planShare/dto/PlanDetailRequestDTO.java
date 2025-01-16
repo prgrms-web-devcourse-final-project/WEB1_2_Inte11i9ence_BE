@@ -11,49 +11,52 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Data;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 public class PlanDetailRequestDTO {
-	@Getter
+	@Data
+	@NoArgsConstructor
 	@AllArgsConstructor
 	@Schema(title = "세부 일정 DTO", description = "일정 그룹 게시물에 포함되는 세부 일정 DTO입니다.")
 	public static class Create {
 
 		@Schema(title = "다음 세부 일정", description = "현재 세부 일정의 다음 세부 일정입니다.")
-		private final PlanDetailRequestDTO.Create nextPlanDetail;
+		private PlanDetailRequestDTO.Create nextPlanDetail;
 
 		@Schema(title = "이전 세부 일정", description = "현재 세부 일정의 이전 세부 일정입니다.")
-		private final PlanDetailRequestDTO.Create prePlanDetail;
+		private PlanDetailRequestDTO.Create prePlanDetail;
 
 		@Schema(title = "장소명", description = "사용자가 방문한 장소의 이름입니다.")
 		@NotBlank(message = "세부 일정의 장소명 입력은 필수입니다.")
-		private final String location;
+		private String location;
 
 		@Schema(title = "장소 ID", description = "Google Place API의 ID값입니다.")
-		private final String placeId;
+		private String placeId;
 
 		@Schema(title = "장소 메모", description = "사용자가 방문한 장소에 대한 짧은 메모입니다.")
-		private final String content;
+		private String content;
 
 		@Schema(title = "위도", description = "장소의 위도 좌표입니다.")
 		@NotNull(message = "위도 입력은 필수입니다.")
 		@DecimalMax(value = "90.0")
 		@DecimalMin(value = "-90.0")
-		private final Double latitude;
+		private Double latitude;
 
 		@Schema(title = "경도", description = "장소의 경도 좌표입니다.")
 		@NotNull(message = "경도 입력은 필수입니다.")
 		@DecimalMax(value = "90.0")
 		@DecimalMin(value = "-90.0")
-		private final Double longitude;
+		private Double longitude;
 
 		@Schema(title = "이미지 URL", description = "장소의 대표 이미지 URL입니다.")
 		@NotBlank(message = "장소 이미지는 필수값입니다.")
-		private final String locationImage;
+		private String locationImage;
 
 		@Schema(title = "방문 일자", description = "사용자가 해당 장소를 방문한 일자입니다.")
 		@NotNull(message = "방문 일자 입력은 필수입니다.")
-		private final LocalDate planDate;
+		private LocalDate planDate;
 	}
 
 	@Builder

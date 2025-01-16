@@ -76,8 +76,8 @@ CREATE TABLE IF NOT EXISTS post
 
 CREATE TABLE IF NOT EXISTS region
 (
-    id   BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) UNIQUE NOT NULL
+    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
+    regionName VARCHAR(50) UNIQUE NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS plan_group
@@ -102,9 +102,9 @@ CREATE TABLE IF NOT EXISTS plan_detail
     id            BIGINT AUTO_INCREMENT PRIMARY KEY,
     plan_group_id BIGINT       NOT NULL,
     location      VARCHAR(255) NOT NULL,
+    place_id      VARCHAR(100) NOT NULL UNIQUE,
     content       VARCHAR(255) NULL,
-    latitude      DOUBLE       NOT NULL,
-    longitude     DOUBLE       NOT NULL,
+    coordinates   GEOMETRY     NOT NULL,
     views         BIGINT       NOT NULL DEFAULT '0',
     likes         BIGINT       NOT NULL DEFAULT '0',
     deleted       TINYINT(1)   NOT NULL DEFAULT '0',
@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS plan_detail
     updated_at    TIMESTAMP             DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at    TIMESTAMP    NULL,
     FOREIGN KEY (plan_group_id) REFERENCES plan_group (id),
-    INDEX idx_plan_detail_location (latitude, longitude)
+    SPATIAL INDEX idx_plan_detail_coordinates (coordinates)
 );
 
 CREATE TABLE IF NOT EXISTS reply

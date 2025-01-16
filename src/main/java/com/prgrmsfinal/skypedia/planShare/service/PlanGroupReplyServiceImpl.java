@@ -14,7 +14,6 @@ import com.prgrmsfinal.skypedia.planShare.repository.PlanGroupReplyRepository;
 import com.prgrmsfinal.skypedia.reply.dto.ReplyResponseDTO;
 import com.prgrmsfinal.skypedia.reply.entity.Reply;
 import com.prgrmsfinal.skypedia.reply.service.ReplyService;
-import com.prgrmsfinal.skypedia.reply.util.ReplyMapper;
 
 import lombok.RequiredArgsConstructor;
 
@@ -34,20 +33,12 @@ public class PlanGroupReplyServiceImpl implements PlanGroupReplyService {
 			throw PlanError.NOT_FOUND_REPLIES.getException();
 		}
 
-		/*List<ReplyResponseDTO.Read> response = results.stream()
-			.map(
-				result -> ReplyMapper.toDTO(result, replyService.isCurrentMemberLiked(authentication, result),
-					replyService.getLikes(result)))
-			.toList();*/
-
 		Reply lastReply = results.get(results.size() - 1);
 
 		String nextUri = new StringBuilder()
 			.append("/api/v1/post/").append(planGroupId)
 			.append("/reply?lastidx=").append(lastReply.getId())
 			.toString();
-
-		// return new ReplyResponseDTO.ReadAll(response, nextUri);
 
 		return new ReplyResponseDTO.ReadAll(null, nextUri);
 	}

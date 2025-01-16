@@ -1,27 +1,26 @@
 package com.prgrmsfinal.skypedia.planShare.service;
 
+import java.util.Collections;
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
+import com.nimbusds.oauth2.sdk.util.StringUtils;
 import com.prgrmsfinal.skypedia.member.dto.MemberResponseDTO;
 import com.prgrmsfinal.skypedia.member.entity.Member;
-import com.prgrmsfinal.skypedia.member.mapper.MemberMapper;
 import com.prgrmsfinal.skypedia.member.service.MemberService;
 import com.prgrmsfinal.skypedia.planShare.dto.PlanGroupRequestDTO;
 import com.prgrmsfinal.skypedia.planShare.dto.PlanGroupResponseDTO;
 import com.prgrmsfinal.skypedia.planShare.entity.PlanGroup;
-import com.prgrmsfinal.skypedia.planShare.entity.Region;
 import com.prgrmsfinal.skypedia.planShare.exception.PlanError;
 import com.prgrmsfinal.skypedia.planShare.mapper.PlanGroupMapper;
-import com.prgrmsfinal.skypedia.planShare.repository.PlanDetailRepository;
 import com.prgrmsfinal.skypedia.planShare.repository.PlanGroupLikesRepository;
 import com.prgrmsfinal.skypedia.planShare.repository.PlanGroupRepository;
 import com.prgrmsfinal.skypedia.planShare.repository.PlanGroupScrapRepository;
@@ -30,21 +29,21 @@ import com.prgrmsfinal.skypedia.reply.dto.ReplyResponseDTO;
 import com.prgrmsfinal.skypedia.reply.entity.Reply;
 import com.prgrmsfinal.skypedia.reply.service.ReplyService;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PlanGroupServiceImpl implements PlanGroupService {
 	private final RedisTemplate<String, String> redisTemplate;
-	private final PlanGroupRepository planGroupRepository;
 	private final PlanGroupReplyService planGroupReplyService;
 	private final MemberService memberService;
 	private final RegionService regionService;
-	private final ReplyService replyService;
+	private final PlanGroupRepository planGroupRepository;
 	private final PlanGroupLikesRepository planGroupLikesRepository;
 	private final PlanGroupScrapRepository planGroupScrapRepository;
-	private final PlanDetailRepository planDetailRepository;
+	private final ReplyService replyService;
 
 	@Value("${planGroup.views.prefix.key}")
 	private String PLAN_GROUP_VIEWS_PREFIX_KEY;
@@ -62,75 +61,82 @@ public class PlanGroupServiceImpl implements PlanGroupService {
 	private String PLAN_GROUP_UNSCRAP_PREFIX_KEY;
 
 	@Override
-	public List<PlanGroupResponseDTO.Info> readAll(Authentication authentication,
-		PlanGroupResponseDTO.ReadAll groupReadAll) {
-		List<PlanGroup> planGroups = planGroupRepository.findAll();
-		return planGroups.stream()
-			.map(planGroup -> {
-				MemberResponseDTO.Info memberInfo = MemberMapper.toDTO(planGroup.getMember());
-				return PlanGroupMapper.transDTO(planGroup, memberInfo,
-					getViews(planGroup.getId(), planGroup.getViews()),
-					getLikes(planGroup.getId(), planGroup.getLikes()), 0L, null);
-			})
+	public PlanGroupResponseDTO.ReadAll readAll(Authentication authentication, String standard, String regionName,
+		int page) {
+		Pageable pageable = PageRequest.of(page, 10, getSortByOrder(standard)); // 한 페이지당 10개 게시물
+		Slice<PlanGroup> planGroups;
+
+		if (StringUtils.isNotBlank(regionName)) {
+			planGroups = planGroupRepository.findByRegionNameAndDeletedFalse(regionName, pageable);
+		} else {
+			planGroups = planGroupRepository.findByDeletedFalse(pageable);
+		}
+
+		if (planGroups.isEmpty()) {
+			return new PlanGroupResponseDTO.ReadAll(Collections.emptyList(), null);
+		}
+
+		List<PlanGroupResponseDTO.Info> responseList = planGroups.stream()
+			.map(PlanGroupMapper::toInfo)
 			.toList();
+
+		String nextUri = planGroups.hasNext()
+			? "/api/v1/plan-group?page=" + (page + 1) + "&standard=" + standard + (regionName != null
+			? "&region=" + regionName : "")
+			: null;
+
+		return new PlanGroupResponseDTO.ReadAll(responseList, nextUri);
+	}
+
+	private Sort getSortByOrder(String order) {
+		return switch (order) {
+			case "likes" -> Sort.by(Sort.Order.desc("likes"), Sort.Order.desc("id"));
+			case "views" -> Sort.by(Sort.Order.desc("views"), Sort.Order.desc("id"));
+			default -> Sort.by(Sort.Order.desc("updatedAt"), Sort.Order.desc("id"));
+		};
 	}
 
 	@Override
-	public PlanGroupResponseDTO.Read read(Authentication authentication, Long id) {
-		PlanGroup planGroup = planGroupRepository.findByIdAndDeleted(id, false)
-			.orElseThrow(PlanError.NOT_FOUND::getException);
+	public PlanGroupResponseDTO.Read read(Authentication authentication, Long planGroupId) {
+		PlanGroup planGroup = planGroupRepository.findByIdAndDeletedFalse(planGroupId)
+			.orElseThrow(() -> new RuntimeException("해당 ID에 대한 PlanGroup이 존재하지 않습니다."));
 
-		incrementViews(id);
+		return PlanGroupMapper.toRead(
+			planGroup,
+			new MemberResponseDTO.Info(planGroup.getMember().getId(), planGroup.getMember().getUsername(),
+				planGroup.getMember().getProfileImage()),
+			new PlanGroupResponseDTO.Statistics(planGroup.getViews(), planGroup.getLikes(), false, false),
+			Collections.emptyList(),
+			null,
+			Collections.emptyList()
+		);
+	}
 
-		MemberResponseDTO.Info memberInfo = MemberMapper.toDTO(planGroup.getMember());
+	@Override
+	public void create(Authentication authentication, PlanGroupRequestDTO.Create groupCreate) {
+		Member member = getAuthenticatedMember(authentication);
 
-		PlanGroupResponseDTO.Statistics statics = PlanGroupResponseDTO.Statistics.builder()
-			.views(getViews(id, planGroup.getViews()))
-			.likes(getLikes(id, planGroup.getLikes()))
-			.liked(isCurrentMemberLiked(authentication, planGroup))
-			.scraped(isCurrentMemberScraped(authentication, planGroup))
+		PlanGroup newPlanGroup = PlanGroup.builder()
+			.member(member)
+			.title(groupCreate.getTitle())
 			.build();
 
-		ReplyResponseDTO.ReadAll replies = planGroupReplyService.readAll(authentication, id, 0L);
+		planGroupRepository.save(newPlanGroup);
+	}
 
-		return PlanGroupMapper.transDTO(planGroup, memberInfo, statics, null, replies);
+	private Member getAuthenticatedMember(Authentication authentication) {
+		return (Member)authentication.getPrincipal();
 	}
 
 	@Override
-	@Transactional
-	public List<String> create(Authentication authentication, PlanGroupRequestDTO.Create groupCreate) {
-		if (!authentication.isAuthenticated()) {
-			throw PostError.UNAUTHORIZED_CREATE.getException();
+	public String update(Authentication authentication, Long id, PlanGroupRequestDTO.Update groupUpdate) {
+		PlanGroup planGroup = planGroupRepository.findById(id)
+			.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 PlanGroup ID입니다."));
+
+		Member authenticatedMember = getAuthenticatedMember(authentication);
+		if (!planGroup.getMember().getId().equals(authenticatedMember.getId())) {
+			throw new SecurityException("수정 권한이 없습니다.");
 		}
-
-		Region region = regionService.findByRegionName(groupCreate.getRegionName())
-			.orElseThrow(PlanError.NOT_FOUND::getException);
-
-		Member member = memberService.getAuthenticatedMember(authentication);
-
-		planGroupRepository.save(
-			PlanGroup.builder()
-				.title(groupCreate.getTitle())
-				.region(region)
-				.member(member)
-				.build()
-		);
-
-		return null;
-	}
-
-	@Override
-	public List<String> update(Authentication authentication, Long id, PlanGroupRequestDTO.Update groupUpdate) {
-		PlanGroup planGroup = planGroupRepository.findByIdAndDeleted(id, false)
-			.orElseThrow(PlanError.NOT_FOUND::getException);
-
-		Member member = memberService.getAuthenticatedMember(authentication);
-
-		if (!planGroup.getMember().getId().equals(member.getId())) {
-			throw PostError.UNAUTHORIZED_MODIFY.getException();
-		}
-
-		planGroup.modify(groupUpdate.getGroupImage(), groupUpdate.getTitle());
 
 		planGroupRepository.save(planGroup);
 
@@ -138,118 +144,83 @@ public class PlanGroupServiceImpl implements PlanGroupService {
 	}
 
 	@Override
-	@Transactional
-	public void delete(Authentication authentication, Long id) {
-		PlanGroup planGroup = planGroupRepository.findById(id)
+	public void delete(Authentication authentication, Long planGroupId) {
+		PlanGroup planGroup = planGroupRepository.findById(planGroupId)
 			.orElseThrow(PlanError.NOT_FOUND::getException);
+
+		Member authenticatedMember = getAuthenticatedMember(authentication);
+		if (!planGroup.getMember().getId().equals(authenticatedMember.getId())) {
+			throw new SecurityException("삭제 권한이 없습니다."); // 권한 없음 예외
+		}
+
 		planGroupRepository.delete(planGroup);
 	}
 
 	@Override
-	public PlanGroupResponseDTO.ReadAll readByRegion(String regionName, Long lastPlanGroupId) {
-		if (!regionService.existsByRegionName(regionName)) {
-			throw PostError.NOT_FOUND_CATEGORY.getException();
-		}
+	public void restore(Authentication authentication, Long planGroupId) {
 
-		List<PlanGroup> planGroups = null;
-
-		planGroups = planGroupRepository.findPlanGroupById(lastPlanGroupId, false, regionName,
-			getPageable(10, Sort.by(Sort.Direction.DESC, "id")));
-
-		if (planGroups == null || planGroups.isEmpty()) {
-			throw PlanError.NOT_FOUND.getException();
-		}
-
-		List<PlanGroupResponseDTO.Info> response = planGroups.stream()
-			.map(planGroup -> {
-				MemberResponseDTO.Info memberInfo = MemberMapper.toDTO(planGroup.getMember());
-				Long replies = planGroupReplyService.getReplyCount(planGroup.getId());
-				return PlanGroupMapper.transDTO(planGroup, memberInfo,
-					getViews(planGroup.getId(), planGroup.getViews()),
-					getLikes(planGroup.getId(), planGroup.getLikes()), replies, null);
-			}).toList();
-
-		PlanGroup lastPlanGroup = planGroups.get(planGroups.size() - 1);
-		StringBuilder nextUri = new StringBuilder("/api/v1/posts?lastId=" + lastPlanGroup.getId());
-
-		if (regionName != null) {
-			nextUri.append("&regionName=" + regionName);
-		}
-
-		return new PlanGroupResponseDTO.ReadAll(response, nextUri.toString());
 	}
 
 	@Override
-	public PlanGroupResponseDTO.ReadAll readByMember(String username, Long lastPlanGroupId) {
+	public PlanGroupResponseDTO.ReadAll readByMember(String username, int page) {
+		Pageable pageable = PageRequest.of(page, 10, Sort.by("updatedAt").descending());
 
-		if (!memberService.checkExistsByUsername(username)) {
-			throw PostError.NOT_FOUND_USERNAME.getException();
-		}
+		Slice<PlanGroup> planGroups = planGroupRepository.findByMemberUsername(username, pageable);
 
-		List<PlanGroup> planGroups = planGroupRepository.findByUsername(username, lastPlanGroupId, false,
-			getPageable(10, Sort.by(Sort.Direction.DESC, "id")));
+		List<PlanGroupResponseDTO.Info> planShare = planGroups.getContent().stream()
+			.map(PlanGroupMapper::toInfo) // 기존 toRead 대신 toInfo로 매핑
+			.toList();
 
-		if (planGroups == null || planGroups.isEmpty()) {
-			throw PostError.NOT_FOUND_POSTS.getException();
-		}
+		String nextUri = planGroups.hasNext()
+			? "/api/v1/plan-group/member?username=" + username + "&page=" + (page + 1)
+			: null;
 
-		List<PlanGroupResponseDTO.Info> response = planGroups.stream()
-			.map(planGroup -> {
-				MemberResponseDTO.Info memberInfo = MemberMapper.toDTO(planGroup.getMember());
-				Long replies = planGroupReplyService.getReplyCount(planGroup.getId());
-				return PlanGroupMapper.transDTO(planGroup, memberInfo,
-					getViews(planGroup.getId(), planGroup.getViews()),
-					getLikes(planGroup.getId(), planGroup.getLikes()), replies, null);
-			}).toList();
-
-		PlanGroup lastPost = planGroups.get(planGroups.size() - 1);
-		String nextUri = new StringBuilder()
-			.append("/api/v1/posts/").append(username)
-			.append("?lastId=").append(lastPost.getId()).toString();
-
-		return new PlanGroupResponseDTO.ReadAll(response, nextUri);
+		return PlanGroupResponseDTO.ReadAll.builder()
+			.planShare(planShare)
+			.nextUri(nextUri)
+			.build();
 	}
 
 	@Override
-	public ReplyResponseDTO.ReadAll readReplies(Authentication authentication, Long id, Long lastReplyId) {
-		PlanGroup planGroup = planGroupRepository.findByIdAndDeleted(id, false)
-			.orElseThrow(PlanError.NOT_FOUND::getException);
-
-		return planGroupReplyService.readAll(authentication, id, lastReplyId);
+	public PlanGroupResponseDTO.ReadAll readByScrap(Authentication authentication, int page) {
+		return null;
 	}
 
 	@Override
-	public PlanGroupResponseDTO.ReadAll search(String keyword, String target, String cursor, Long lastPlanGroupId) {
-		List<PlanGroupResponseDTO.Search> results = switch (target) {
-			case "title" -> planGroupRepository.findPlanGroupByTitleKeyword(
-				keyword, Double.parseDouble(cursor), lastPlanGroupId);
-			case "content" -> planDetailRepository.findPlanGroupByContentKeyword(
-				keyword, Double.parseDouble(cursor), lastPlanGroupId);
-			default -> throw PlanError.BAD_REQUEST.getException();
-		};
+	public ReplyResponseDTO.ReadAll readReplies(Authentication authentication, Long planGroupId, int page) {
+		return null;
+	}
 
-		if (results == null || results.isEmpty()) {
-			throw PlanError.NOT_FOUND.getException();
+	@Override
+	public PlanGroupResponseDTO.ReadAll search(String keyword, String order, int page) {
+		if (order == null || order.isBlank()) {
+			order = "updatedAt"; // 기본값
 		}
 
-		List<PlanGroupResponseDTO.Info> response = results.stream()
-			.map(planGroup -> {
-				MemberResponseDTO.Info memberInfo = MemberMapper.toDTO(planGroup.getMember());
-				Long replies = planGroupReplyService.getReplyCount(planGroup.getId());
-				return PlanGroupMapper.transDTO(planGroup, memberInfo,
-					getViews(planGroup.getId(), planGroup.getViews()),
-					getLikes(planGroup.getId(), planGroup.getLikes()), replies, null);
-			}).toList();
+		Sort sort = Sort.by(order).descending();
 
-		PlanGroupResponseDTO.Search lastResult = results.get(results.size() - 1);
+		Pageable pageable = PageRequest.of(page, 10, sort);
 
-		String nextUri = new StringBuilder()
-			.append("/api/v1/posts?keyword=").append(keyword)
-			.append("&target=").append(target)
-			.append("&lastrev=").append(lastResult.getRelevance())
-			.append("&lastidx=").append(lastResult.getId()).toString();
+		Slice<PlanGroup> planGroupPage;
 
-		return new PlanGroupResponseDTO.ReadAll(response, nextUri);
+		if (keyword != null && !keyword.isBlank()) {
+			planGroupPage = planGroupRepository.findByKeyword(keyword, pageable);
+		} else {
+			planGroupPage = planGroupRepository.findAll(pageable); // 키워드가 없으면 전체 검색
+		}
+
+		List<PlanGroupResponseDTO.Info> planShare = planGroupPage.getContent().stream()
+			.map(PlanGroupMapper::toInfo)
+			.toList();
+
+		String nextUri = planGroupPage.hasNext()
+			? "/api/v1/plan-group/search?keyword=" + keyword + "&order=" + order + "&page=" + (page + 1)
+			: null;
+
+		return PlanGroupResponseDTO.ReadAll.builder()
+			.planShare(planShare)
+			.nextUri(nextUri)
+			.build();
 	}
 
 	@Override
@@ -259,29 +230,29 @@ public class PlanGroupServiceImpl implements PlanGroupService {
 		}
 
 		PlanGroup planGroup = planGroupRepository.findByIdAndDeleted(id, false)
-			.orElseThrow(PostError.NOT_FOUND_POST::getException);
+			.orElseThrow(PlanError.NOT_FOUND::getException);
 
 		Member member = memberService.getAuthenticatedMember(authentication);
 
-		// Reply reply = replyService.create(groupCreateReply, member);
+		Reply reply = replyService.create(groupCreateReply, member);
 
-		// planGroupReplyService.create(planGroup, reply);
+		planGroupReplyService.create(planGroup, reply);
 	}
 
 	@Override
-	public PlanGroupResponseDTO.ToggleLikes toggleLikes(Authentication authentication, Long id) {
+	public PlanGroupResponseDTO.LikeStatus toggleLikes(Authentication authentication, Long planGroupId) {
 		if (!authentication.isAuthenticated()) {
 			throw PlanError.UNAUTHORIZED_TOGGLE_LIKES.getException();
 		}
 
-		PlanGroup planGroup = planGroupRepository.findByIdAndDeleted(id, false)
+		PlanGroup planGroup = planGroupRepository.findByIdAndDeleted(planGroupId, false)
 			.orElseThrow(PlanError.NOT_FOUND::getException);
 
 		Long memberId = memberService.getAuthenticatedMember(authentication).getId();
 
-		String likesKey = PLAN_GROUP_LIKES_PREFIX_KEY + id;
-		String unlikesKey = PLAN_GROUP_UNLIKES_PREFIX_KEY + id;
-		boolean isLiked = isCurrentMemberLiked(authentication, planGroup);
+		String likesKey = PLAN_GROUP_LIKES_PREFIX_KEY + planGroupId;
+		String unlikesKey = PLAN_GROUP_UNLIKES_PREFIX_KEY + planGroupId;
+		boolean isLiked = getLiked(memberId, planGroupId);
 
 		if (!isLiked) {
 			redisTemplate.opsForSet().add(likesKey, memberId.toString());
@@ -291,23 +262,27 @@ public class PlanGroupServiceImpl implements PlanGroupService {
 			redisTemplate.opsForSet().remove(likesKey, memberId.toString());
 		}
 
-		return new PlanGroupResponseDTO.ToggleLikes(!isLiked, getLikes(planGroup.getId(), planGroup.getLikes()));
+		return new PlanGroupResponseDTO.LikeStatus(!isLiked, getLikes(planGroupId));
 	}
 
 	@Override
-	public boolean toggleScrap(Authentication authentication, Long id) {
+	public boolean toggleScrap(Authentication authentication, Long planGroupId) {
 		if (!authentication.isAuthenticated()) {
 			throw PlanError.UNAUTHORIZED_TOGGLE_SCRAP.getException();
 		}
 
-		PlanGroup planGroup = planGroupRepository.findByIdAndDeleted(id, false)
-			.orElseThrow(PlanError.NOT_FOUND::getException);
+		Long authorId = planGroupRepository.findByIdAndDeleted(planGroupId, false)
+			.orElseThrow(PostError.NOT_FOUND_POST::getException).getMember().getId();
 
 		Long memberId = memberService.getAuthenticatedMember(authentication).getId();
 
-		String scrapKey = PLAN_GROUP_SCRAP_PREFIX_KEY + id;
-		String unscrapKey = PLAN_GROUP_UNSCRAP_PREFIX_KEY + id;
-		boolean isScraped = isCurrentMemberScraped(authentication, planGroup);
+		if (authorId == memberId) {
+			throw PostError.BAD_REQUEST_TOGGLE_SCRAP.getException();
+		}
+
+		String scrapKey = PLAN_GROUP_SCRAP_PREFIX_KEY + planGroupId;
+		String unscrapKey = PLAN_GROUP_UNSCRAP_PREFIX_KEY + planGroupId;
+		boolean isScraped = getScraped(memberId, planGroupId);
 
 		if (!isScraped) {
 			redisTemplate.opsForSet().add(scrapKey, memberId.toString());
@@ -320,71 +295,56 @@ public class PlanGroupServiceImpl implements PlanGroupService {
 		return !isScraped;
 	}
 
-	private Long getLikes(Long id, Long likes) {
-		String likesKey = StringUtils.join(PLAN_GROUP_LIKES_PREFIX_KEY, id);
-		String unlikesKey = StringUtils.join(PLAN_GROUP_UNLIKES_PREFIX_KEY, id);
+	private boolean getLiked(Long memberId, Long planGroupId) {
+		String likesKey = PLAN_GROUP_LIKES_PREFIX_KEY + planGroupId;
+		String unlikesKey = PLAN_GROUP_UNLIKES_PREFIX_KEY + planGroupId;
 
-		if (Boolean.TRUE.equals(redisTemplate.hasKey(likesKey))) {
-			likes += redisTemplate.opsForSet().size(likesKey);
+		boolean isLiked = redisTemplate.opsForSet().isMember(likesKey, memberId.toString());
+		boolean isUnliked = redisTemplate.opsForSet().isMember(unlikesKey, memberId.toString());
+
+		if (!isLiked && !isUnliked) {
+			return planGroupLikesRepository.existsByPlanGroupIdAndMemberId(planGroupId, memberId);
 		}
 
-		if (Boolean.TRUE.equals(redisTemplate.hasKey(unlikesKey))) {
-			likes -= redisTemplate.opsForSet().size(unlikesKey);
-		}
-
-		return likes;
+		return isLiked && !isUnliked;
 	}
 
-	private Long getViews(Long id, Long views) {
-		if (Boolean.TRUE.equals(redisTemplate.hasKey(StringUtils.join(PLAN_GROUP_VIEWS_PREFIX_KEY, id)))) {
-			views += (Long)redisTemplate.opsForHash().get(PLAN_GROUP_VIEWS_PREFIX_KEY, id);
-		}
+	private Long getLikes(Long planGroupId) {
+		String likesKey = PLAN_GROUP_LIKES_PREFIX_KEY + planGroupId;
+		String unlikesKey = PLAN_GROUP_UNLIKES_PREFIX_KEY + planGroupId;
 
-		return views;
+		Long cachedLikes = redisTemplate.opsForSet().size(likesKey);
+		Long cachedUnlikes = redisTemplate.opsForSet().size(unlikesKey);
+		Long dbLikes = planGroupRepository.findLikesById(planGroupId);
+
+		return dbLikes + (cachedLikes != null ? cachedLikes : 0) - (cachedUnlikes != null ? cachedUnlikes : 0);
 	}
 
-	private void incrementViews(Long id) {
-		redisTemplate.opsForHash().increment(PLAN_GROUP_VIEWS_PREFIX_KEY, id.toString(), 1);
+	private boolean getScraped(Long memberId, Long planGroupId) {
+		String scrapKey = PLAN_GROUP_SCRAP_PREFIX_KEY + planGroupId;
+		String unscrapKey = PLAN_GROUP_UNSCRAP_PREFIX_KEY + planGroupId;
+
+		boolean isScrap = redisTemplate.opsForSet().isMember(scrapKey, memberId.toString());
+		boolean isUnscrap = redisTemplate.opsForSet().isMember(unscrapKey, memberId.toString());
+
+		if (!isScrap && !isUnscrap) {
+			return planGroupScrapRepository.existsByPlanGroupIdAndMemberId(planGroupId, memberId);
+		}
+
+		return isScrap && !isUnscrap;
 	}
 
-	private boolean isCurrentMemberLiked(Authentication authentication, PlanGroup planGroup) {
-		String likesKey = StringUtils.join(PLAN_GROUP_LIKES_PREFIX_KEY, planGroup.getId());
-		String unlikesKey = StringUtils.join(PLAN_GROUP_UNLIKES_PREFIX_KEY, planGroup.getId());
-		Long memberId = memberService.getAuthenticatedMember(authentication).getId();
+	private Long getViews(Long planGroupId) {
+		String cachedViewsStr = (String)redisTemplate.opsForHash()
+			.get(PLAN_GROUP_VIEWS_PREFIX_KEY, planGroupId.toString());
+		Long cachedViews = cachedViewsStr != null ? Long.parseLong(cachedViewsStr) : 0L;
+		Long dbViews = planGroupRepository.findViewsById(planGroupId);
 
-		if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(likesKey, memberId))) {
-			return true;
-		}
-
-		if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(unlikesKey, memberId))) {
-			return false;
-		}
-
-		if (planGroupLikesRepository.existsByPlanGroupIdAndMemberId(planGroup.getId(), memberId)) {
-			return true;
-		}
-
-		return false;
+		return dbViews + cachedViews;
 	}
 
-	private boolean isCurrentMemberScraped(Authentication authentication, PlanGroup planGroup) {
-		String scrapKey = PLAN_GROUP_SCRAP_PREFIX_KEY + planGroup.getId();
-		String unscrapKey = PLAN_GROUP_UNLIKES_PREFIX_KEY + planGroup.getId();
-		Long memberId = memberService.getAuthenticatedMember(authentication).getId();
-
-		if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(scrapKey, memberId))) {
-			return true;
-		}
-
-		if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(unscrapKey, memberId))) {
-			return false;
-		}
-
-		if (planGroupLikesRepository.existsByPlanGroupIdAndMemberId(planGroup.getId(), memberId)) {
-			return true;
-		}
-
-		return false;
+	private void incrementViews(Long planGroupId) {
+		redisTemplate.opsForHash().increment(PLAN_GROUP_VIEWS_PREFIX_KEY, planGroupId.toString(), 1);
 	}
 
 	private Pageable getPageable(int size, Sort sort) {

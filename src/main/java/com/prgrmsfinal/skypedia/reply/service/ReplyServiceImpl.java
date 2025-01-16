@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import com.prgrmsfinal.skypedia.member.entity.Member;
 import com.prgrmsfinal.skypedia.member.entity.Role;
 import com.prgrmsfinal.skypedia.member.service.MemberService;
+import com.prgrmsfinal.skypedia.planShare.dto.PlanGroupRequestDTO;
 import com.prgrmsfinal.skypedia.reply.dto.ReplyRequestDTO;
 import com.prgrmsfinal.skypedia.reply.dto.ReplyResponseDTO;
 import com.prgrmsfinal.skypedia.reply.entity.Reply;
@@ -191,5 +192,15 @@ public class ReplyServiceImpl implements ReplyService {
 		Long dbLikes = replyRepository.findLikesById(replyId);
 
 		return dbLikes + (cachedLikes != null ? cachedLikes : 0) - (cachedUnlikes != null ? cachedUnlikes : 0);
+	}
+
+	@Override
+	public boolean isCurrentMemberLiked(Authentication authentication, Reply result) {
+		return false;
+	}
+
+	@Override
+	public Reply create(PlanGroupRequestDTO.CreateReply groupCreateReply, Member member) {
+		return null;
 	}
 }

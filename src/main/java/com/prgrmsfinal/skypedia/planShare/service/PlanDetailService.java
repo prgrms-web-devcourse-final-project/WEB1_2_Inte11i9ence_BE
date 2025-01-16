@@ -13,4 +13,6 @@ public interface PlanDetailService {
 	PlanDetailRequestDTO.Update update(Long id, PlanDetailRequestDTO.Update detailUpdate);
 
 	void delete(Long id);
+
+	void reorder(Long targetId, Long newPrevId, Long newNextId);
 }

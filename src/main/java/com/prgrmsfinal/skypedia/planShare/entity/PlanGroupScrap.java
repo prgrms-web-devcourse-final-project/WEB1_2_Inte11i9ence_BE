@@ -5,17 +5,18 @@ import java.time.LocalDateTime;
 import com.prgrmsfinal.skypedia.member.entity.Member;
 import com.prgrmsfinal.skypedia.planShare.entity.key.PlanGroupScrapId;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Getter
+@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -31,5 +32,6 @@ public class PlanGroupScrap {
 	@MapsId("memberId")
 	private Member member;
 
+	@Column(insertable = false, updatable = false)
 	private LocalDateTime scrapedAt;
 }
