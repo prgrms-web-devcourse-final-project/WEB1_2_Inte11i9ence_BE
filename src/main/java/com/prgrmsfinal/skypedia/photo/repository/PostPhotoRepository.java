@@ -1,6 +1,7 @@
 package com.prgrmsfinal.skypedia.photo.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -29,4 +30,7 @@ public interface PostPhotoRepository extends JpaRepository<PostPhoto, PostPhotoI
 	@Query("SELECT pp FROM PostPhoto pp JOIN FETCH pp.photo WHERE pp.post.id = :postId")
 	List<PostPhoto> findByPostId(@Param("postId") Long postId);
 
+	//post id 검출중 젤 높은거 뽑는거임
+	@Query("SELECT pp FROM PostPhoto pp WHERE pp.post.id = :postId ORDER BY pp.photo.id ASC LIMIT 1")
+	Optional<PostPhoto> findTopByPostIdOrderByPhotoIdAsc(@Param("postId") Long postId);
 }

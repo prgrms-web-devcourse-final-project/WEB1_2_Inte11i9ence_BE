@@ -10,14 +10,16 @@ public interface PhotoService {
 
 	//리퀘스트dto로 업로드된 값들을 가져와 id, url을 List로 반환
 	List<PhotoResponseDTO.Info> createPhotoUrlList(List<PhotoRequestDTO.Upload> photoDTOs);
-	
+
 	List<String> readPhotoUrlList(List<Long> photoId);
 
 	List<String> modifyPhotoUrlList(List<PhotoDTO> photoDTOs);
 
-	boolean checkContentType(PhotoRequestDTO.Upload photoDTO);
+	String readPhotoUrlByPostId(Long postId);
 
-	List<PhotoResponseDTO.Info> readPhotosByPostId(Long postId);
+	List<PhotoResponseDTO.Info> readPhotoUrlListByPostId(Long postId);
+
+	boolean checkContentType(PhotoRequestDTO.Upload photoDTO);
 
 	List<PhotoResponseDTO.Info> uploadPhotosForPost(Long postId, List<PhotoRequestDTO.Upload> uploads);
 

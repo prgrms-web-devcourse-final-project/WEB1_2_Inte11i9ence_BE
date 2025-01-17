@@ -3,6 +3,7 @@ package com.prgrmsfinal.skypedia.photo.service;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -105,20 +106,40 @@ public class PhotoServiceImpl implements PhotoService {
 			}
 			photoRepository.updatePhotoDetails(id, originalFileName, cont);
 			photoUrls.add(s3Service.modifyPresignedURL(photoRepository.findS3FileKeyById(id)));
-
 		}
 
 		return photoUrls;
 	}
 
-	// ------ POST | READ ------
-	// Post ID로 해당 게시글의 모든 사진 정보 조회
-	public List<PhotoResponseDTO.Info> readPhotosByPostId(Long postId) {
-		List<Photo> photos = photoRepository.findPhotosByPostId(postId);
-		return photos.stream()
-			.map(photo -> PhotoResponseDTO.Info.builder()
-				.photoUrl(s3Service.getPresignedUrl(photo.getS3FileKey()))
-				.build())
+	@Override
+	public String readPhotoUrlByPostId(Long postId) {
+		// postId로 가장 낮은 photoId를 가진 PostPhoto 조회
+		Optional<PostPhoto> postPhotoOpt = postPhotoRepository.findTopByPostIdOrderByPhotoIdAsc(postId);
+
+		// 조회 결과가 없는 경우 null 반환
+		if (postPhotoOpt.isEmpty()) {
+			return null;
+		}
+
+		// Photo 엔티티에서 s3FileKey를 가져와 URL 생성
+		Photo photo = postPhotoOpt.get().getPhoto();
+		return s3Service.getPresignedUrl(photo.getS3FileKey());
+	}
+
+	@Override
+	public List<PhotoResponseDTO.Info> readPhotoUrlListByPostId(Long postId) {
+		// postId로 PostPhoto 엔티티 조회
+		List<PostPhoto> postPhotos = postPhotoRepository.findByPostId(postId);
+
+		// PostPhoto에서 Photo 엔티티를 꺼내고, PhotoResponseDTO.Info 객체 생성
+		return postPhotos.stream()
+			.map(postPhoto -> {
+				Photo photo = postPhoto.getPhoto();
+				return PhotoResponseDTO.Info.builder()
+					.id(photo.getId())  // 사진 ID
+					.photoUrl(s3Service.getPresignedUrl(photo.getS3FileKey()))  // 사진 URL
+					.build();
+			})
 			.collect(Collectors.toList());
 	}
 

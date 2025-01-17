@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS member
 (
     id            BIGINT AUTO_INCREMENT PRIMARY KEY,
     oauth_id      VARCHAR(255)       NOT NULL,
+    name          VARCHAR(255)       NOT NULL,
     username      VARCHAR(20) UNIQUE NOT NULL,
     name          VARCHAR(30)        NOT NULL,
     email         VARCHAR(50)        NOT NULL,
@@ -236,6 +237,27 @@ CREATE TABLE IF NOT EXISTS `chat_message`
     KEY `FKmhgucpbdwb4b4l4h91fg0x7a8` (`sender_id`),
     CONSTRAINT `FKc8p1hhbh0jkq9yj4bxdh4fgty` FOREIGN KEY (`chat_room_id`) REFERENCES `chat_room` (`id`),
     CONSTRAINT `FKmhgucpbdwb4b4l4h91fg0x7a8` FOREIGN KEY (`sender_id`) REFERENCES `member` (`id`)
+);
+
+CREATE TABLE IF NOT EXISTS select_post (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    member_id BIGINT NOT NULL,
+    content VARCHAR(1000),
+    deleted TINYINT(1) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL,
+    FOREIGN KEY (member_id) REFERENCES member (id) ON DELETE CASCADE
+ );
+
+CREATE TABLE IF NOT EXISTS select_post_photo (
+    post_id BIGINT NOT NULL,
+    photo_id BIGINT NOT NULL,
+    category VARCHAR(2) NOT NULL,
+    likes BIGINT NOT NULL DEFAULT 0,
+    PRIMARY KEY (post_id, photo_id),
+    FOREIGN KEY (post_id) REFERENCES select_post (id) ON DELETE CASCADE,
+    FOREIGN KEY (photo_id) REFERENCES photo (id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS refresh_token
