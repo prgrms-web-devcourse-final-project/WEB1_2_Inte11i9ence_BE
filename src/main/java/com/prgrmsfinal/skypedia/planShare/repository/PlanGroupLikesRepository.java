@@ -14,7 +14,7 @@ import com.prgrmsfinal.skypedia.post.entity.PostLikes;
 @Repository
 public interface PlanGroupLikesRepository extends JpaRepository<PlanGroupLikes, PlanGroupLikesId> {
 	@Query(value = "SELECT EXISTS (SELECT 1 FROM plan_group_likes WHERE id = :id AND member_id = :memberId)", nativeQuery = true)
-	boolean existsByPlanGroupIdAndMemberId(@Param("id") Long id, @Param("memberId") Long memberId);
+	boolean existsByPlanGroupIdAndMemberId(@Param("id") Long planGroupId, @Param("memberId") Long memberId);
 
 	@Query("SELECT psl FROM PlanGroupLikes psl WHERE psl.planGroup.id = :planGroupId AND psl.member.id = :memberId")
 	Optional<PostLikes> findByPlanGroupIdAndMemberId(@Param("planGroupId") Long postId,

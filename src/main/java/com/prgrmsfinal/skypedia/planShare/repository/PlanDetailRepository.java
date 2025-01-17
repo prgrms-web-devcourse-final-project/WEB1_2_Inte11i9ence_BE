@@ -4,11 +4,12 @@ import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.prgrmsfinal.skypedia.planShare.dto.PlanGroupResponseDTO;
 import com.prgrmsfinal.skypedia.planShare.entity.PlanDetail;
+
+import io.lettuce.core.dynamic.annotation.Param;
 
 @Repository
 public interface PlanDetailRepository extends JpaRepository<PlanDetail, Long> {
@@ -16,4 +17,6 @@ public interface PlanDetailRepository extends JpaRepository<PlanDetail, Long> {
 	List<PlanGroupResponseDTO.Search> findPlanGroupByContentKeyword(@Param("keyword") String keyword,
 		@Param("lastRelevance") double lastRelevance,
 		@Param("lastPostId") Long lastPlanGroupId);
+
+	List<PlanDetail> findAllByPlanGroupId(Long attr0);
 }
