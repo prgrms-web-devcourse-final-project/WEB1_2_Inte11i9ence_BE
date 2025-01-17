@@ -33,7 +33,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 
@@ -335,7 +334,8 @@ public class PostController {
 	})
 	@GetMapping("/posts/search")
 	@ResponseStatus(HttpStatus.OK)
-	public PostResponseDTO.ReadAll search(@RequestParam(value = "keyword", defaultValue = "") @NotNull(message = "null 값은 허용되지 않습니다.") String keyword
+	public PostResponseDTO.ReadAll search(
+		@RequestParam(value = "keyword", defaultValue = "") @NotNull(message = "null 값은 허용되지 않습니다.") String keyword
 		, @RequestParam(name = "option", required = false) String option
 		, @RequestParam(name = "page", defaultValue = "0", required = false) int page) {
 		return postService.search(keyword, option, page);
@@ -368,6 +368,7 @@ public class PostController {
 			)
 		}
 	)
+	
 	@PostMapping("/post")
 	public ResponseEntity<?> create(Authentication authentication, @Valid @RequestBody PostRequestDTO.Create request) {
 		List<String> uploadUrls = postService.create(authentication, request);

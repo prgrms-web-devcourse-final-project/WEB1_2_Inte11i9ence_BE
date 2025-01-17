@@ -78,10 +78,10 @@ public class PlanDetailController {
 		}
 	)
 	@PostMapping
-	public ResponseEntity<PlanDetailRequestDTO.Create> create(
+	@ResponseStatus(HttpStatus.CREATED)
+	public void create(
 		@Valid @RequestBody PlanDetailRequestDTO.Create detailCreate) {
-		PlanDetailRequestDTO.Create createdPlanDetail = planDetailService.register(detailCreate);
-		return ResponseEntity.status(HttpStatus.CREATED).body(createdPlanDetail);
+		planDetailService.register(detailCreate);
 	}
 
 	@Operation(
@@ -106,18 +106,18 @@ public class PlanDetailController {
 		}
 	)
 	@Parameter(
-		name = "id",
+		name = "planDetailId",
 		description = "수정할 세부 일정의 ID",
 		required = true,
 		example = "1",
 		schema = @Schema(type = "integer")
 	)
-	@PutMapping("/{id}")
+	@PutMapping("/{planDetailId}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public PlanDetailRequestDTO.Update update(
-		@PathVariable @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long id,
+		@PathVariable @Min(value = 1, message = "ID는 1이상의 값이어야 합니다.") Long planDetailId,
 		@Valid @RequestBody PlanDetailRequestDTO.Update detailUpdate) {
-		PlanDetailRequestDTO.Update locationImageUrl = planDetailService.update(id, detailUpdate);
+		PlanDetailRequestDTO.Update locationImageUrl = planDetailService.update(planDetailId, detailUpdate);
 		return locationImageUrl;
 	}
 

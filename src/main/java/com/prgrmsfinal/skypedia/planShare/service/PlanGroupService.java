@@ -1,7 +1,5 @@
 package com.prgrmsfinal.skypedia.planShare.service;
 
-import java.util.List;
-
 import org.springframework.security.core.Authentication;
 
 import com.prgrmsfinal.skypedia.planShare.dto.PlanGroupRequestDTO;
@@ -9,28 +7,29 @@ import com.prgrmsfinal.skypedia.planShare.dto.PlanGroupResponseDTO;
 import com.prgrmsfinal.skypedia.reply.dto.ReplyResponseDTO;
 
 public interface PlanGroupService {
-	List<PlanGroupResponseDTO.Info> readAll(Authentication authentication,
-		PlanGroupResponseDTO.ReadAll groupReadAll);
+	PlanGroupResponseDTO.ReadAll readAll(Authentication authentication, String standard, String regionName, int page);
 
-	PlanGroupResponseDTO.Read read(Authentication authentication, Long id);
+	PlanGroupResponseDTO.Read read(Authentication authentication, Long planGroupId);
 
-	List<String> create(Authentication authentication, PlanGroupRequestDTO.Create groupCreate);
+	PlanGroupResponseDTO.ReadAll readByMember(String username, int page);
 
-	List<String> update(Authentication authentication, Long id, PlanGroupRequestDTO.Update groupUpdate);
+	PlanGroupResponseDTO.ReadAll readByScrap(Authentication authentication, int page);
 
-	void delete(Authentication authentication, Long id);
+	ReplyResponseDTO.ReadAll readReplies(Authentication authentication, Long planGroupId, int page);
 
-	PlanGroupResponseDTO.ReadAll readByRegion(String regionName, Long lastPlanGroupId);
-
-	PlanGroupResponseDTO.ReadAll readByMember(String username, Long lastPlanGroupId);
-
-	ReplyResponseDTO.ReadAll readReplies(Authentication authentication, Long planGroupId, Long lastReplyId);
-
-	PlanGroupResponseDTO.ReadAll search(String keyword, String target, String cursor, Long lastPlanGroupId);
+	void create(Authentication authentication, PlanGroupRequestDTO.Create groupCreate);
 
 	void createReply(Authentication authentication, Long planGroupId, PlanGroupRequestDTO.CreateReply groupCreateReply);
 
-	PlanGroupResponseDTO.ToggleLikes toggleLikes(Authentication authentication, Long planGroupId);
+	PlanGroupResponseDTO.LikeStatus toggleLikes(Authentication authentication, Long planGroupId);
 
 	boolean toggleScrap(Authentication authentication, Long planGroupId);
+
+	String update(Authentication authentication, Long planGroupId, PlanGroupRequestDTO.Update groupUpdate);
+
+	void delete(Authentication authentication, Long planGroupId);
+
+	void restore(Authentication authentication, Long planGroupId);
+
+	PlanGroupResponseDTO.ReadAll search(String keyword, String order, int page);
 }

@@ -4,9 +4,8 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-import com.prgrmsfinal.skypedia.member.entity.Role;
-import com.prgrmsfinal.skypedia.member.repository.MemberRepository;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -16,15 +15,22 @@ import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import com.prgrmsfinal.skypedia.member.dto.MemberResponseDTO;
 import com.prgrmsfinal.skypedia.member.entity.Member;
+import com.prgrmsfinal.skypedia.member.entity.Role;
 import com.prgrmsfinal.skypedia.member.mapper.MemberMapper;
 import com.prgrmsfinal.skypedia.member.service.MemberService;
 import com.prgrmsfinal.skypedia.notify.constant.NotifyType;
 import com.prgrmsfinal.skypedia.notify.dto.NotifyRequestDTO;
+import com.prgrmsfinal.skypedia.photo.dto.PhotoResponseDTO;
+import com.prgrmsfinal.skypedia.photo.entity.Photo;
+import com.prgrmsfinal.skypedia.photo.entity.PostPhoto;
+import com.prgrmsfinal.skypedia.photo.entity.PostPhotoId;
+import com.prgrmsfinal.skypedia.photo.repository.PhotoRepository;
+import com.prgrmsfinal.skypedia.photo.repository.PostPhotoRepository;
+import com.prgrmsfinal.skypedia.photo.service.PhotoService;
 import com.prgrmsfinal.skypedia.post.dto.PostRequestDTO;
 import com.prgrmsfinal.skypedia.post.dto.PostResponseDTO;
 import com.prgrmsfinal.skypedia.post.entity.Post;
@@ -36,8 +42,6 @@ import com.prgrmsfinal.skypedia.post.repository.PostScrapRepository;
 import com.prgrmsfinal.skypedia.post.util.PostMapper;
 import com.prgrmsfinal.skypedia.reply.dto.ReplyRequestDTO;
 import com.prgrmsfinal.skypedia.reply.dto.ReplyResponseDTO;
-import com.prgrmsfinal.skypedia.reply.entity.Reply;
-import com.prgrmsfinal.skypedia.reply.service.ReplyService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,6 +66,8 @@ public class PostServiceImpl implements PostService {
 
 	private final ApplicationEventPublisher eventPublisher;
 
+	private final PhotoService photoService;
+
 	@Value("${post.views.prefix.key}")
 	private String POST_VIEWS_PREFIX_KEY;
 
@@ -77,14 +83,20 @@ public class PostServiceImpl implements PostService {
 	@Value("${post.unscrap.prefix.key}")
 	private String POST_UNSCRAP_PREFIX_KEY;
 
+	private final PhotoRepository photoRepository;
+
+	private final PostPhotoRepository postPhotoRepository;
+
 	@Override
 	public PostResponseDTO.Read read(Authentication authentication, Long postId) {
 		Long memberId = null;
 
+		//회원검증
 		if (authentication != null && authentication.isAuthenticated()) {
 			memberId = memberService.getAuthenticatedMember(authentication).getId();
 		}
 
+		//게시물 유효성
 		Post post = postRepository.findByIdAndDeleted(postId, false)
 			.orElseThrow(PostError.NOT_FOUND_POST::getException);
 
@@ -102,7 +114,9 @@ public class PostServiceImpl implements PostService {
 
 		ReplyResponseDTO.ReadAll replies = postReplyService.readAll(authentication, postId, 0);
 
-		return PostMapper.toDTO(post, memberInfo, postStats, null, replies);
+		List<PhotoResponseDTO.Info> photos = photoService.readPhotoUrlListByPostId(postId);
+
+		return PostMapper.toDTO(post, memberInfo, postStats, photos, replies);
 	}
 
 	@Override
@@ -128,7 +142,6 @@ public class PostServiceImpl implements PostService {
 		Slice<Post> result = (StringUtils.isBlank(category)) ? postRepository.findAllByDeleted(false, pageable)
 			: postRepository.findAllByCategory(false, category, pageable);
 
-
 		if (result == null || result.isEmpty()) {
 			throw PostError.NOT_FOUND_POSTS.getException();
 		}
@@ -139,7 +152,7 @@ public class PostServiceImpl implements PostService {
 			return new PostResponseDTO.ReadAll(posts, null);
 		}
 
-		Map<String, String> params = new HashMap<>(){{
+		Map<String, String> params = new HashMap<>() {{
 			put("order", order);
 			put("category", category);
 		}};
@@ -150,7 +163,7 @@ public class PostServiceImpl implements PostService {
 	@Override
 	public PostResponseDTO.ReadAll readAll(String username, int page) {
 		Pageable pageable = PageRequest.of(page, 10, Sort.by("id").descending());
-		Slice<Post> result = postRepository.findAllByUsername(username,false, pageable);
+		Slice<Post> result = postRepository.findAllByUsername(username, false, pageable);
 
 		if (result == null || result.isEmpty()) {
 			throw PostError.NOT_FOUND_POSTS.getException();
@@ -174,7 +187,7 @@ public class PostServiceImpl implements PostService {
 		Long memberId = memberService.getAuthenticatedMember(authentication).getId();
 
 		Pageable pageable = PageRequest.of(page, 10, Sort.by("id").descending());
-		Slice<Post> result = postScrapRepository.findAllByScraped(memberId,false, pageable);
+		Slice<Post> result = postScrapRepository.findAllByScraped(memberId, false, pageable);
 
 		if (result == null || result.isEmpty()) {
 			throw PostError.NOT_FOUND_POSTS.getException();
@@ -217,7 +230,7 @@ public class PostServiceImpl implements PostService {
 			return new PostResponseDTO.ReadAll(posts, null);
 		}
 
-		Map<String, String> params = new HashMap<>(){{
+		Map<String, String> params = new HashMap<>() {{
 			put("keyword", keyword);
 			put("option", option);
 		}};
@@ -231,8 +244,9 @@ public class PostServiceImpl implements PostService {
 				Long postId = post.getId();
 				MemberResponseDTO.Info memberInfo = MemberMapper.toDTO(post.getMember());
 				Long replies = postReplyService.getReplyCount(post.getId());
+				String photoUrl = photoService.readPhotoUrlByPostId(postId);
 				return PostMapper.toDTO(post, memberInfo, getViews(postId),
-					getLikes(postId), replies, null);
+					getLikes(postId), replies, photoUrl);
 			}).toList();
 	}
 
@@ -302,8 +316,48 @@ public class PostServiceImpl implements PostService {
 			));
 		}
 
-		// 사진 연동 작업이 필요함!!!
-		return null;
+		// 이미지 데이터가 없는 경우 null 반환
+		if (request.getUploads() == null || request.getUploads().isEmpty()) {
+			return null;
+		}
+
+		// PhotoService를 통해 사진 업로드 및 URL 받기
+		List<PhotoResponseDTO.Info> photoInfos = photoService.createPhotoUrlList(request.getUploads());
+
+		//photo 생성된거에서 id 끄집어오기
+		List<Long> photoIds = photoInfos.stream()
+			.map(PhotoResponseDTO.Info::getId)
+			.collect(Collectors.toList());
+
+		Map<Long, Photo> photoMap = photoRepository.findAllById(photoIds).stream()
+			.collect(Collectors.toMap(Photo::getId, photo -> photo));
+
+		for (Long photoId : photoIds) {
+			Photo photo = photoMap.get(photoId);
+			if (photo == null) {
+				throw new RuntimeException("해당 ID의 사진을 찾을 수 없습니다: " + photoId);
+			}
+
+			// 이 밑에 수정 안함.
+			// 복합 키 생성 아이디 생성.
+			PostPhotoId postPhotoId = new PostPhotoId();
+			postPhotoId.setPostId(post.getId());
+			postPhotoId.setPhotoId(photoId);
+
+			// 셀렉트 포토 생성.
+			PostPhoto postPhoto = PostPhoto.builder()
+				.id(postPhotoId)
+				.post(post)
+				.photo(photo)
+				.build();
+
+			postPhotoRepository.save(postPhoto);
+		}
+		List<String> photoUrls = photoInfos.stream()
+			.map(PhotoResponseDTO.Info::getPhotoUrl)
+			.collect(Collectors.toList());
+
+		return photoUrls;
 	}
 
 	@Override
@@ -471,7 +525,7 @@ public class PostServiceImpl implements PostService {
 	}
 
 	private Long getViews(Long postId) {
-		String cachedViewsStr = (String) redisTemplate.opsForHash().get(POST_VIEWS_PREFIX_KEY, postId.toString());
+		String cachedViewsStr = (String)redisTemplate.opsForHash().get(POST_VIEWS_PREFIX_KEY, postId.toString());
 		Long cachedViews = cachedViewsStr != null ? Long.parseLong(cachedViewsStr) : 0L;
 		Long dbViews = postRepository.findViewsById(postId);
 

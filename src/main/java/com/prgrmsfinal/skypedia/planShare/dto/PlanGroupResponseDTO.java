@@ -1,12 +1,12 @@
 package com.prgrmsfinal.skypedia.planShare.dto;
 
 import java.time.LocalDateTime;
-import java.util.LinkedList;
 import java.util.List;
 
 import com.prgrmsfinal.skypedia.member.dto.MemberResponseDTO;
 import com.prgrmsfinal.skypedia.member.entity.Member;
 import com.prgrmsfinal.skypedia.photo.dto.PhotoResponseDTO;
+import com.prgrmsfinal.skypedia.planShare.entity.PlanDetail;
 import com.prgrmsfinal.skypedia.reply.dto.ReplyResponseDTO;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -25,7 +25,6 @@ public class PlanGroupResponseDTO {
 
 		@Schema(title = "다음 게시글 목록 URL", description = "다음 게시글 목록 URL입니다.")
 		private final String nextUri;
-
 	}
 
 	@Schema(title = "PlanGroup 단일 조회 응답 DTO", description = "단일 일정 그룹 조회 응답 DTO입니다.")
@@ -37,14 +36,14 @@ public class PlanGroupResponseDTO {
 		@Schema(title = "일정 그룹 ID", description = "일정 그룹의 고유 ID입니다.", example = "1")
 		private final Long id;
 
+		@Schema(title = "일정 제목", description = "일정 그룹의 제목입니다.", example = "가족 여행 일정")
+		private final String title;
+
 		@Schema(title = "작성자 정보", description = "닉네임, 프로필이미지 데이터입니다.")
 		private final MemberResponseDTO.Info author;
 
-		@Schema(title = "지역 ID", description = "일정 그룹이 속한 지역의 ID입니다.", example = "101")
+		@Schema(title = "지역 ID", description = "일정 그룹이 속한 지역의 ID 입니다.", example = "101")
 		private final String regionName;
-
-		@Schema(title = "일정 제목", description = "일정 그룹의 제목입니다.", example = "가족 여행 일정")
-		private final String title;
 
 		@Schema(title = "조회수", description = "일정 그룹의 조회수입니다.", example = "123")
 		private final Long views;
@@ -65,7 +64,7 @@ public class PlanGroupResponseDTO {
 		private final List<PhotoResponseDTO.Info> photos;
 
 		@Schema(title = "세부 일정 목록", description = "일정 그룹에 포함된 세부 일정 목록입니다.")
-		private final LinkedList<PlanDetailResponseDTO.Read> planDetails;
+		private final List<PlanDetailResponseDTO.Read> planDetails;
 
 		@Schema(title = "댓글 정보", description = "게시글의 댓글 데이터 목록입니다.")
 		private final ReplyResponseDTO.ReadAll reply;
@@ -84,7 +83,7 @@ public class PlanGroupResponseDTO {
 
 		private final String content;
 
-		// private final LinkedList<PlanDetail> planDetails;
+		private final List<PlanDetail> planDetails;
 
 		private final Long views;
 
@@ -99,6 +98,7 @@ public class PlanGroupResponseDTO {
 		private final double relevance;
 	}
 
+	@Schema(title = "일정 공유 게시물 응답 DTO", description = "일정 공유 게시물의 통계 조회에 사용되는 응답 DTO 입니다.")
 	@Getter
 	@AllArgsConstructor
 	@Builder
@@ -116,10 +116,11 @@ public class PlanGroupResponseDTO {
 		private final boolean scraped;
 	}
 
+	@Schema(title = "일정 공유 게시물 좋아요 DTO", description = "일정 공유 게시물 좋아요 토글 응답에 사용하는 DTO 입니다.")
 	@Getter
 	@AllArgsConstructor
 	@Builder
-	public static class ToggleLikes {
+	public static class LikeStatus {
 		@Schema(title = "좋아요 여부", description = "회원의 좋아요 토글 여부입니다.", example = "true")
 		private final boolean liked;
 
@@ -127,11 +128,12 @@ public class PlanGroupResponseDTO {
 		private final Long likes;
 	}
 
+	@Schema(title = "일정 공유 응답 DTO", description = "게시글 내용 응답에 사용하는 DTO 입니다.")
 	@Getter
 	@AllArgsConstructor
 	@Builder
 	public static class Info {
-		@Schema(title = "게시글 ID", description = "게시글 ID입니다.")
+		@Schema(title = "게시글 ID", description = "게시글 ID 입니다.")
 		private final Long id;
 
 		@Schema(title = "작성자 정보", description = "닉네임, 프로필이미지 데이터입니다.")

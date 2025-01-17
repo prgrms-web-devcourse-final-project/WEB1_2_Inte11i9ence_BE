@@ -7,9 +7,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
 public class PlanDetailResponseDTO {
 	@Getter
+	@Setter
 	@Builder
 	@AllArgsConstructor
 	@Schema(title = "PlanDetail 응답 DTO", description = "세부 일정 응답 DTO입니다.")

@@ -6,7 +6,6 @@ import org.springframework.security.core.Authentication;
 
 import com.prgrmsfinal.skypedia.post.dto.PostRequestDTO;
 import com.prgrmsfinal.skypedia.post.dto.PostResponseDTO;
-import com.prgrmsfinal.skypedia.reply.dto.ReplyRequestDTO;
 import com.prgrmsfinal.skypedia.reply.dto.ReplyResponseDTO;
 
 public interface PostService {

@@ -3,7 +3,9 @@ package com.prgrmsfinal.skypedia.planShare.repository;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -15,11 +17,26 @@ import com.prgrmsfinal.skypedia.planShare.entity.PlanGroup;
 
 @Repository
 public interface PlanGroupRepository extends JpaRepository<PlanGroup, Long> {
+	Slice<PlanGroup> findByDeletedFalse(Pageable pageable);
+
+	Slice<PlanGroup> findByRegionNameAndDeletedFalse(String regionName, Pageable pageable);
+
+	Optional<PlanGroup> findByIdAndDeletedFalse(Long id);
+
+	@Query("SELECT pg FROM PlanGroup pg " +
+		"LEFT JOIN FETCH pg.member " +
+		"LEFT JOIN FETCH pg.region " +
+		"LEFT JOIN FETCH pg.planDetails pd " +
+		"WHERE pg.id = :groupId")
+	Optional<PlanGroup> findByIdWithDetails(@Param("groupId") Long groupId);
+
 	@Query("SELECT pg FROM PlanGroup pg WHERE pg.region.regionName = :regionName")
 	List<PlanGroup> findByRegion(@Param("regionName") String regionName);
 
 	@Query("SELECT pg FROM PlanGroup pg WHERE pg.member.username = :username")
 	List<PlanGroup> findByMember(@Param("username") String username);
+
+	Page<PlanGroup> findByMemberUsername(String username, Pageable pageable);
 
 	@Query("SELECT pd FROM PlanGroup pd WHERE pd.id = :id AND pd.deleted = :deleted")
 	Optional<PlanGroup> findByIdAndDeleted(@Param("id") Long id, @Param("deleted") boolean deleted);
@@ -32,6 +49,13 @@ public interface PlanGroupRepository extends JpaRepository<PlanGroup, Long> {
 	List<PlanGroupResponseDTO.Search> findPlanGroupByTitleKeyword(@Param("keyword") String keyword,
 		@Param("lastRelevance") double lastRelevance, @Param("lastPlanGroupId") Long lastPlanGroupId);
 
+	@Query("SELECT DISTINCT pg FROM PlanGroup pg " +
+		"LEFT JOIN pg.planDetails pd " +
+		"WHERE LOWER(pg.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+		"OR LOWER(pd.content) LIKE LOWER(CONCAT('%', :keyword, '%'))"
+	)
+	Page<PlanGroup> findByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
 	@Query("SELECT pg FROM PlanGroup pg WHERE pg.id < :lastPlanGroupId AND pg.deleted = :deleted AND pg.region.regionName = :regionName ORDER BY pg.id")
 	List<PlanGroup> findPlanGroupById(@Param("lastPlanGroupId") Long lastPlanGroupId, @Param("deleted") boolean deleted,
 		@Param("regionName") String regionName, Pageable pageable);
@@ -43,4 +67,8 @@ public interface PlanGroupRepository extends JpaRepository<PlanGroup, Long> {
 	@Modifying
 	@Query("UPDATE PlanGroup pg SET pg.likes = pg.likes + :likes WHERE pg.id = :id")
 	void incrementLikesById(@Param("id") Long id, @Param("likes") Long likes);
+
+	Long findLikesById(Long planGroupId);
+
+	Long findViewsById(Long planGroupId);
 }
