@@ -1,13 +1,16 @@
 package com.prgrmsfinal.skypedia.planShare.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.List;
-
-@Data
 @Entity
 @Getter
 @Builder
@@ -15,11 +18,10 @@ import java.util.List;
 @NoArgsConstructor
 @Table(name = "region")
 public class Region {
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;            // 지역 ID
-
-    @Column(nullable = false, unique = true, length = 50)
-    private String name;        // 지역명
+	@Column(nullable = false, unique = true)
+	private String regionName;
 }

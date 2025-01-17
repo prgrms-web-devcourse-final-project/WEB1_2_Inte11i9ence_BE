@@ -1,17 +1,35 @@
 package com.prgrmsfinal.skypedia.planShare.service;
 
-import com.prgrmsfinal.skypedia.planShare.dto.PlanGroupDTO;
+import org.springframework.security.core.Authentication;
 
-import java.util.List;
+import com.prgrmsfinal.skypedia.planShare.dto.PlanGroupRequestDTO;
+import com.prgrmsfinal.skypedia.planShare.dto.PlanGroupResponseDTO;
+import com.prgrmsfinal.skypedia.reply.dto.ReplyResponseDTO;
 
 public interface PlanGroupService {
-    List<PlanGroupDTO> readAll(PlanGroupDTO planGroupDTO);
+	PlanGroupResponseDTO.ReadAll readAll(Authentication authentication, String standard, String regionName, int page);
 
-    PlanGroupDTO read(Long id);
+	PlanGroupResponseDTO.Read read(Authentication authentication, Long planGroupId);
 
-    PlanGroupDTO register(PlanGroupDTO planGroupDTO);
+	PlanGroupResponseDTO.ReadAll readByMember(String username, int page);
 
-    PlanGroupDTO update(PlanGroupDTO planGroupDTO);
+	PlanGroupResponseDTO.ReadAll readByScrap(Authentication authentication, int page);
 
-    void delete(Long id);
+	ReplyResponseDTO.ReadAll readReplies(Authentication authentication, Long planGroupId, int page);
+
+	void create(Authentication authentication, PlanGroupRequestDTO.Create groupCreate);
+
+	void createReply(Authentication authentication, Long planGroupId, PlanGroupRequestDTO.CreateReply groupCreateReply);
+
+	PlanGroupResponseDTO.LikeStatus toggleLikes(Authentication authentication, Long planGroupId);
+
+	boolean toggleScrap(Authentication authentication, Long planGroupId);
+
+	String update(Authentication authentication, Long planGroupId, PlanGroupRequestDTO.Update groupUpdate);
+
+	void delete(Authentication authentication, Long planGroupId);
+
+	void restore(Authentication authentication, Long planGroupId);
+
+	PlanGroupResponseDTO.ReadAll search(String keyword, String order, int page);
 }

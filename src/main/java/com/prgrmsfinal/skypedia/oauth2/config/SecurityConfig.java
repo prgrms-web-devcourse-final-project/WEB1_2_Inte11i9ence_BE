@@ -1,102 +1,107 @@
 package com.prgrmsfinal.skypedia.oauth2.config;
 
-import com.prgrmsfinal.skypedia.oauth2.jwt.CustomSuccessHandler;
-import com.prgrmsfinal.skypedia.oauth2.jwt.JWTFilter;
-import com.prgrmsfinal.skypedia.oauth2.jwt.JWTUtil;
-import com.prgrmsfinal.skypedia.oauth2.service.CustomOAuth2UserService;
-import jakarta.servlet.http.HttpServletRequest;
+
+import com.prgrmsfinal.skypedia.oauth2.dto.TokenResponse;
+import com.prgrmsfinal.skypedia.oauth2.jwt.JwtAuthenticationFilter;
+import com.prgrmsfinal.skypedia.oauth2.jwt.JwtTokenProvider;
+import com.prgrmsfinal.skypedia.oauth2.service.GoogleOAuth2Service;
+import com.prgrmsfinal.skypedia.oauth2.service.NaverOAuth2Service;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Collections;
+import java.util.Arrays;
+
 
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
+	private final NaverOAuth2Service naverOAuth2Service;
+	private final GoogleOAuth2Service googleOAuth2Service;
+	private final JwtTokenProvider jwtTokenProvider;
 
-    private final CustomSuccessHandler customSuccessHandler;
-    private final CustomOAuth2UserService customOAuth2UserService;
-    private final JWTUtil jwtUtil;
+	@Bean
+	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+		http
+				.csrf(csrf -> csrf.disable())
+				.cors(cors -> cors.configurationSource(corsConfigurationSource()))
+				.sessionManagement(session -> session
+						.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.exceptionHandling(exceptionHandling -> exceptionHandling
+						.authenticationEntryPoint((request, response, authException) -> {
+							response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+							response.setContentType("application/json");
+							response.setCharacterEncoding("UTF-8");
+							response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \""
+									+ authException.getMessage() + "\"}");
+						}))
+				.authorizeHttpRequests(auth -> auth
+						.requestMatchers("/login/oauth2/code/**", "/oauth2/authorization/**", "/error", "/login",
+								"/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**",
+								"/webjars/**", "/actuator/**","/api/v1/auth/refresh").permitAll()
+						.requestMatchers(HttpMethod.GET,
+									"/api/v1/posts", "/api/v1/posts/{username}", "/api/v1/plan-group","/api/v1/notify",
+									"/api/v1/post-category","/api/v1/plan-detail**",
+									"/api/v1/region**","/api/v1/plan-group**",
+									"/api/v1/member/{username}","/api/v1/post**", "/api/v1/post/**",
+									"/api/v1/reply**", "/api/v1/reply/**","/api/v1/photo**").permitAll()
+						.requestMatchers("/ws-stomp/**").permitAll()  // WebSocket 엔드포인트 허용
+						.requestMatchers(HttpMethod.GET,
+								"/api/v1/chat/rooms",
+								"/api/v1/chat/room/{roomId}/messages").authenticated()
+						.requestMatchers("/api/v1/chat/**").authenticated()
+						.anyRequest().authenticated())
 
-    @Value("${frontend.url}")
-    private String frontendUrl;
-    @Value("${backend.url}")
-    private String backendUrl;
+				.oauth2Login(oauth2 -> oauth2
+						.successHandler((request, response, authentication) -> {
+							OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
+//							TokenResponse tokenResponse = naverOAuth2Service
+//									.authenticateNaverUser(oauth2User.getAttributes());
+							TokenResponse tokenResponse;
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+							String registrationId = request.getRequestURI()
+									.contains("google") ? "google" : "naver";
 
-        http
-                .cors(corsCustomizer -> corsCustomizer.configurationSource(new CorsConfigurationSource() {
+							if ("google".equals(registrationId)) {
+								tokenResponse = googleOAuth2Service
+										.authenticateGoogleUser(oauth2User.getAttributes());
+							} else {
+								tokenResponse = naverOAuth2Service
+										.authenticateNaverUser(oauth2User.getAttributes());
+							}
+							String redirectUrl = String.format("http://localhost:5173/oauth/callback?token=%s&refreshToken=%s",
+									tokenResponse.getAccessToken(),
+									tokenResponse.getRefreshToken());
+							response.sendRedirect(redirectUrl);
+						}))
+				.addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
+						UsernamePasswordAuthenticationFilter.class);
 
-                    @Override
-                    public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
+		return http.build();
+	}
+	@Bean
+	public CorsConfigurationSource corsConfigurationSource() {
+		CorsConfiguration config = new CorsConfiguration();
+		config.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
+		config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+		config.setAllowedHeaders(Arrays.asList("*"));
+		config.setAllowCredentials(true);
 
-                        CorsConfiguration configuration = new CorsConfiguration();
-
-                        configuration.setAllowedOrigins(Collections.singletonList(frontendUrl));
-                        configuration.setAllowedMethods(Collections.singletonList("*"));
-                        configuration.setAllowCredentials(true);
-                        configuration.setAllowedHeaders(Collections.singletonList("*"));
-                        configuration.setMaxAge(3600L);
-
-                        configuration.setExposedHeaders(Collections.singletonList("Set-Cookie"));
-                        configuration.setExposedHeaders(Collections.singletonList("Authorization"));
-
-                        return configuration;
-                    }
-                }));
-        //csrf disable
-        http
-                .csrf((auth) -> auth.disable());
-
-        //From 로그인 방식 disable
-        http
-                .formLogin((auth) -> auth.disable());
-
-        //HTTP Basic 인증 방식 disable
-        http
-                .httpBasic((auth) -> auth.disable());
-
-        http
-                .addFilterBefore(new JWTFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
-
-        //oauth2
-        http
-                .oauth2Login((oauth2) -> oauth2
-                        .userInfoEndpoint((userInfoEndpointConfig -> userInfoEndpointConfig
-                                .userService(customOAuth2UserService)))
-                        .successHandler(customSuccessHandler));
-
-        //경로별 인가 작업
-        http
-                .authorizeHttpRequests((auth) -> auth
-                        .requestMatchers("/", "/login").permitAll()
-                        .anyRequest().authenticated());
-
-        //세션 설정 : STATELESS
-        http
-                .sessionManagement((session) -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-
-        http.logout(logout -> logout
-                .logoutUrl("/logout")
-                .logoutSuccessUrl(frontendUrl)
-                .invalidateHttpSession(false)  // 세션 무효화 비활성화 (stateless 방식에선 필요 없음)
-                .clearAuthentication(true)  // SecurityContext 초기화
-                .deleteCookies("Authorization"));  // JWT가 저장된 쿠키 삭제
-
-
-        return http.build();
-    }
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		source.registerCorsConfiguration("/**", config);
+		return source;
+	}
 }

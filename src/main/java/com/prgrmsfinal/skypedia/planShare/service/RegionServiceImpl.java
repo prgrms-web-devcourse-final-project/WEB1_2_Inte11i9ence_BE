@@ -1,81 +1,58 @@
 package com.prgrmsfinal.skypedia.planShare.service;
 
-import com.prgrmsfinal.skypedia.planShare.dto.RegionDTO;
-import com.prgrmsfinal.skypedia.planShare.entity.Region;
-import com.prgrmsfinal.skypedia.planShare.exception.PlanError;
-import com.prgrmsfinal.skypedia.planShare.repository.RegionRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.ResponseStatus;
+
+import com.prgrmsfinal.skypedia.planShare.dto.RegionRequestDTO;
+import com.prgrmsfinal.skypedia.planShare.dto.RegionResponseDTO;
+import com.prgrmsfinal.skypedia.planShare.entity.Region;
+import com.prgrmsfinal.skypedia.planShare.exception.PlanError;
+import com.prgrmsfinal.skypedia.planShare.mapper.RegionMapper;
+import com.prgrmsfinal.skypedia.planShare.repository.RegionRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class RegionServiceImpl implements RegionService {
-    private final RegionRepository regionRepository;
+	private final RegionRepository regionRepository;
 
-    @Override
-    public List<RegionDTO> readAll(RegionDTO regionDTO) {
-        List<Region> regions = regionRepository.findAll();
-        return regions.stream().map(this::entityToDto).collect(Collectors.toList());
-    }
+	@Override
+	@ResponseStatus(HttpStatus.OK)
+	public List<RegionResponseDTO.Read> readAll() {
+		return regionRepository.findAll().stream().map(RegionMapper::entityToDTO).toList();
+	}
 
-    @Override
-    public RegionDTO read(Long id) {
-        Optional<Region> region = regionRepository.findById(id);
-        return region.map(this::entityToDto).orElseThrow(PlanError.NOT_FOUND::get);
-    }
+	@Override
+	@ResponseStatus(HttpStatus.OK)
+	public RegionResponseDTO read(String regionName) {
+		return regionRepository.findByRegionName(regionName);
+	}
 
-    @Override
-    public RegionDTO register(RegionDTO regionDTO) {
-        try {
-            Region region = dtoToEntity(regionDTO);
-            region = regionRepository.save(region);
-            return entityToDto(region);
-        } catch (Exception e) {
-            log.error(e.getMessage());
-            throw PlanError.NOT_REGISTERED.get();
-        }
-    }
+	@Override
+	public void create(Authentication authentication, RegionRequestDTO.Create regionRequestDTO) {
+		regionRepository.save(RegionMapper.dtoToEntity(regionRequestDTO));
+	}
 
-    @Override
-    public RegionDTO update(RegionDTO regionDTO) {
-        Optional<Region> updateRegion = regionRepository.findById(regionDTO.getId());
-        Region region = updateRegion.orElseThrow(PlanError.NOT_FOUND::get);
+	@Override
+	public RegionRequestDTO.Create update(RegionRequestDTO.Create regionRequestDTO) {
+		Optional<Region> updateRegion = regionRepository.findById(regionRequestDTO.getId());
+		Region region = updateRegion.orElseThrow(PlanError.NOT_FOUND::getException);
 
-        try {
-            region.setName(regionDTO.getName());
+		regionRepository.save(region);
+		return null;
+	}
 
-            regionRepository.save(region);
-
-            return entityToDto(region);
-        } catch (Exception e) {
-            log.error(e.getMessage());
-            throw PlanError.NOT_MODIFIED.get();
-        }
-    }
-
-    @Override
-    public void delete(Long id) {
-        Region region = regionRepository.findById(id).orElseThrow(PlanError.NOT_FOUND::get);
-        regionRepository.delete(region);
-    }
-
-    private RegionDTO entityToDto(Region region) {
-        return RegionDTO.builder()
-                .id(region.getId())
-                .name(region.getName())
-                .build();
-    }
-
-    private Region dtoToEntity(RegionDTO regionDTO) {
-        return Region.builder()
-                .id(regionDTO.getId())
-                .name(regionDTO.getName())
-                .build();
-    }
+	@Override
+	public void delete(Long id) {
+		Region region = regionRepository.findById(id).orElseThrow(PlanError.NOT_FOUND::getException);
+		regionRepository.delete(region);
+	}
 }

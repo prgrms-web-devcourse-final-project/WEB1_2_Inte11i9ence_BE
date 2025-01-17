@@ -1,17 +1,18 @@
 package com.prgrmsfinal.skypedia.planShare.service;
 
-import com.prgrmsfinal.skypedia.planShare.dto.PlanDetailDTO;
-
 import java.util.List;
 
+import com.prgrmsfinal.skypedia.planShare.dto.PlanDetailRequestDTO;
+import com.prgrmsfinal.skypedia.planShare.dto.PlanDetailResponseDTO;
+
 public interface PlanDetailService {
-    List<PlanDetailDTO> readAll(PlanDetailDTO planDetailDTO);
+	List<PlanDetailResponseDTO.ReadAll> readAll(PlanDetailResponseDTO.ReadAll planDetailDTO);
 
-    PlanDetailDTO read(Long id);
+	PlanDetailRequestDTO.Create register(PlanDetailRequestDTO.Create detailCreate);
 
-    PlanDetailDTO register(PlanDetailDTO planDetailDTO);
+	PlanDetailRequestDTO.Update update(Long id, PlanDetailRequestDTO.Update detailUpdate);
 
-    PlanDetailDTO update(PlanDetailDTO planDetailDTO);
+	void delete(Long id);
 
-    void delete(Long id);
+	void reorder(Long targetId, Long newPrevId, Long newNextId);
 }

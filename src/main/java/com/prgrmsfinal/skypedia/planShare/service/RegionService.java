@@ -1,17 +1,23 @@
 package com.prgrmsfinal.skypedia.planShare.service;
 
-import com.prgrmsfinal.skypedia.planShare.dto.RegionDTO;
-
 import java.util.List;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.RequestBody;
+
+import com.prgrmsfinal.skypedia.planShare.dto.RegionRequestDTO;
+import com.prgrmsfinal.skypedia.planShare.dto.RegionResponseDTO;
+
+import jakarta.validation.Valid;
+
 public interface RegionService {
-    List<RegionDTO> readAll(RegionDTO regionDTO);
+	List<RegionResponseDTO.Read> readAll();
 
-    RegionDTO read(Long id);
+	RegionResponseDTO read(String regionName);
 
-    RegionDTO register(RegionDTO regionDTO);
+	void create(Authentication authentication, @Valid @RequestBody RegionRequestDTO.Create regionRequestDTO);
 
-    RegionDTO update(RegionDTO regionDTO);
+	RegionRequestDTO.Create update(RegionRequestDTO.Create regionRequestDTO);
 
-    void delete(Long id);
+	void delete(Long id);
 }
